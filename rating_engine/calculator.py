@@ -32,7 +32,7 @@ ROLE_WEIGHTS = {
     PlayerRole.BOWLER: (0.05, 0.80, 0.15),
     PlayerRole.BATTING_ALL_ROUNDER: (0.55, 0.30, 0.15),
     PlayerRole.BOWLING_ALL_ROUNDER: (0.30, 0.55, 0.15),
-    PlayerRole.WICKET_KEEPER: (0.65, 0.05, 0.30),
+    PlayerRole.WICKET_KEEPER: (0.75, 0.00, 0.25),
 }
 
 
