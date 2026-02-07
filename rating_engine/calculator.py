@@ -29,7 +29,7 @@ from .models import (
 # Role-based weights: (batting_weight, bowling_weight, fielding_weight)
 ROLE_WEIGHTS = {
     PlayerRole.BATTER: (0.80, 0.05, 0.15),
-    PlayerRole.BOWLER: (0.15, 0.70, 0.15),
+    PlayerRole.BOWLER: (0.05, 0.80, 0.15),
     PlayerRole.BATTING_ALL_ROUNDER: (0.55, 0.30, 0.15),
     PlayerRole.BOWLING_ALL_ROUNDER: (0.30, 0.55, 0.15),
     PlayerRole.WICKET_KEEPER: (0.65, 0.05, 0.30),

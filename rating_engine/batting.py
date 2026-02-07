@@ -138,6 +138,9 @@ def calculate_batting_rating(
             result_score = 0.0
         elif entry.runs >= 40:
             result_score = -0.1
+    # Bowlers get reduced match result impact on batting rating
+    if is_bowler and result_score < 0:
+        result_score *= 0.5
     details["match_result"] = {"won": is_winning_team, "score": round(result_score, 2)}
 
     # ── 8. Chase pressure bonus (-0.5 to +1.0) ──
