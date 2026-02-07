@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ roster.name }} - CricScore{% endblock %}
+
+{% block content %}
+<div class="roster-header">
+    <div class="roster-header-top">
+        <a href="/rosters" class="btn btn-secondary btn-sm">&larr; All Rosters</a>
+    </div>
+    <div class="roster-title-row">
+        <h1 class="page-title roster-name-display">{{ roster.name }}</h1>
+        <button class="btn btn-secondary btn-sm" onclick="toggleRename()">Rename</button>
+        <form method="POST" action="/roster/{{ roster.id }}/delete" class="inline-form"
+              onsubmit="return confirm('Delete this roster?')">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+    </div>
+
+    <!-- Rename form (hidden by default) -->
+    <form method="POST" action="/roster/{{ roster.id }}/rename" class="roster-rename-form" id="rename-form" style="display:none;">
+        <input type="text" name="name" value="{{ roster.name }}" class="search-input" required>
+        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleRename()">Cancel</button>
+    </form>
+</div>
+
+<p class="page-subtitle">{{ players | length }} player{{ 's' if players | length != 1 else '' }} in this roster.</p>
+
+<!-- Add Player -->
+<div class="roster-add-section">
+    <form method="POST" action="/roster/{{ roster.id }}/add" class="roster-add-form">
+        <input type="text" name="player_name" placeholder="Add player..." list="player-list" class="search-input" required>
+        <button type="submit" class="btn btn-primary">Add Player</button>
+    </form>
+    <datalist id="player-list">
+        {% for name in all_players %}
+        <option value="{{ name }}">
+        {% endfor %}
+    </datalist>
+</div>
+
+<!-- Team Aggregate Stats -->
+{% if players %}
+{% set active_players = players | selectattr('matches', 'greaterthan', 0) | list %}
+{% if active_players %}
+<div class="roster-team-stats">
+    <h3 class="section-heading">Team Overview</h3>
+    <div class="profile-stats-grid">
+        <div class="stat-card">
+            <div class="stat-big">{{ active_players | length }}</div>
+            <div class="stat-label">Active Players</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ '%.1f' | format(active_players | map(attribute='avg_overall') | sum / active_players | length) }}</div>
+            <div class="stat-label">Avg Rating</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ active_players | map(attribute='total_runs') | sum }}</div>
+            <div class="stat-label">Total Runs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ active_players | map(attribute='total_wickets') | sum }}</div>
+            <div class="stat-label">Total Wickets</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ active_players | map(attribute='mvp_count') | sum }}</div>
+            <div class="stat-label">MVP Awards</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Players List -->
+<div class="roster-players-section">
+    <h3 class="section-heading">Players</h3>
+    <div class="players-grid">
+        {% for p in players %}
+        <div class="player-list-card roster-player-card">
+            {% if p.matches > 0 %}
+            <a href="/player/{{ p.player_name }}" class="rating-circle {{ _rating_color(p.avg_overall) }}">
+                {{ p.avg_overall }}
+            </a>
+            {% else %}
+            <div class="rating-circle poor">-</div>
+            {% endif %}
+            <div class="player-list-info">
+                <div class="player-name">
+                    {% if p.matches > 0 %}
+                    <a href="/player/{{ p.player_name }}" class="player-name-link">{{ p.player_name }}</a>
+                    {% else %}
+                    {{ p.player_name }}
+                    {% endif %}
+                </div>
+                <div class="player-role">
+                    {% if p.matches > 0 %}
+                        {{ p.role | replace('_', ' ') }} &middot; {{ p.matches }} match{{ 'es' if p.matches != 1 else '' }}
+                    {% else %}
+                        No match data yet
+                    {% endif %}
+                </div>
+            </div>
+            {% if p.matches > 0 %}
+            <div class="player-list-stats">
+                <div class="stat-item">
+                    <span class="stat-value">{{ p.total_runs }}</span>
+                    <span class="stat-label">Runs</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ p.total_wickets }}</span>
+                    <span class="stat-label">Wkts</span>
+                </div>
+                {% if p.mvp_count %}
+                <div class="stat-item">
+                    <span class="stat-value" style="color: #ffd700;">{{ p.mvp_count }}</span>
+                    <span class="stat-label">MVPs</span>
+                </div>
+                {% endif %}
+                {% if p.form %}
+                <div class="form-guide">
+                    <span class="form-label">Form</span>
+                    <div class="form-dots">
+                        {% for r in p.form %}
+                        <div class="form-dot {{ _rating_color(r) }}" title="{{ r }}"></div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            <form method="POST" action="/roster/{{ roster.id }}/remove" class="inline-form">
+                <input type="hidden" name="player_name" value="{{ p.player_name }}">
+                <button type="submit" class="btn btn-remove" title="Remove from roster">&times;</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">&#x1F465;</div>
+    <h3>No players yet</h3>
+    <p>Add players to this roster using the form above. They can also be in other rosters.</p>
+</div>
+{% endif %}
+
+<script>
+function toggleRename() {
+    const form = document.getElementById('rename-form');
+    form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+}
+</script>
+{% endblock %}

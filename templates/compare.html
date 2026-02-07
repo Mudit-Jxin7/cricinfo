@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+{% block title %}Compare Players - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Head to Head</h1>
+<p class="page-subtitle">Compare two players side by side across all rated matches.</p>
+
+<div class="compare-form-section">
+    <form method="GET" action="/compare" class="compare-form">
+        <div class="compare-input-group">
+            <label>Player 1</label>
+            <input type="text" name="p1" value="{{ p1 }}" placeholder="Enter player name..." list="player-list" class="search-input" required>
+        </div>
+        <div class="compare-vs">VS</div>
+        <div class="compare-input-group">
+            <label>Player 2</label>
+            <input type="text" name="p2" value="{{ p2 }}" placeholder="Enter player name..." list="player-list" class="search-input" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-compare">Compare</button>
+    </form>
+    <datalist id="player-list">
+        {% for name in all_players %}
+        <option value="{{ name }}">
+        {% endfor %}
+    </datalist>
+</div>
+
+{% if comparison %}
+{% set s1 = comparison.get(p1) %}
+{% set s2 = comparison.get(p2) %}
+
+{% if not s1 or not s2 %}
+<div class="empty-state">
+    <h3>Player not found</h3>
+    <p>
+        {% if not s1 %}No data found for "{{ p1 }}". {% endif %}
+        {% if not s2 %}No data found for "{{ p2 }}". {% endif %}
+        Make sure the names match exactly.
+    </p>
+</div>
+{% elif s1.player_type != s2.player_type %}
+{# Block mismatched comparisons #}
+{% set type_labels = {"batter": "Batter", "bowler": "Bowler", "all_rounder": "All-Rounder"} %}
+<div class="empty-state">
+    <div class="empty-icon">&#x26A0;</div>
+    <h3>Can't compare different roles</h3>
+    <p>
+        <strong>{{ s1.player_name }}</strong> is a <span class="compare-type-badge type-{{ s1.player_type }}">{{ type_labels[s1.player_type] }}</span>
+        and <strong>{{ s2.player_name }}</strong> is a <span class="compare-type-badge type-{{ s2.player_type }}">{{ type_labels[s2.player_type] }}</span>.
+    </p>
+    <p>You can only compare players of the same role: Batter vs Batter, Bowler vs Bowler, or All-Rounder vs All-Rounder.</p>
+</div>
+{% else %}
+
+{# Both players have the same type #}
+{% set ptype = s1.player_type %}
+{% set type_labels = {"batter": "Batter", "bowler": "Bowler", "all_rounder": "All-Rounder"} %}
+
+<!-- Summary Cards -->
+<div class="h2h-header">
+    <div class="h2h-player-card">
+        <a href="/player/{{ s1.player_name }}" class="h2h-player-link">
+            <div class="rating-circle {{ _rating_color(s1.avg_overall) }}">
+                {{ s1.avg_overall }}
+            </div>
+            <div class="h2h-name">{{ s1.player_name }}</div>
+            <div class="h2h-matches">{{ s1.matches }} match{{ 'es' if s1.matches != 1 else '' }}</div>
+            <span class="compare-type-badge type-{{ ptype }}">{{ type_labels[ptype] }}</span>
+        </a>
+    </div>
+    <div class="h2h-vs-big">VS</div>
+    <div class="h2h-player-card">
+        <a href="/player/{{ s2.player_name }}" class="h2h-player-link">
+            <div class="rating-circle {{ _rating_color(s2.avg_overall) }}">
+                {{ s2.avg_overall }}
+            </div>
+            <div class="h2h-name">{{ s2.player_name }}</div>
+            <div class="h2h-matches">{{ s2.matches }} match{{ 'es' if s2.matches != 1 else '' }}</div>
+            <span class="compare-type-badge type-{{ ptype }}">{{ type_labels[ptype] }}</span>
+        </a>
+    </div>
+</div>
+
+<!-- Radar Chart -->
+<div class="h2h-section">
+    <div class="radar-wrapper">
+        <div class="radar-legend">
+            <span class="radar-legend-item p1-color">{{ s1.player_name }}</span>
+            <span class="radar-legend-item p2-color">{{ s2.player_name }}</span>
+        </div>
+        <div class="radar-chart-container">
+            <canvas id="radarChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Per-Match Normalized Stats -->
+<div class="h2h-section">
+    <h3 class="section-heading">Per-Match Comparison</h3>
+    <p class="section-subheading">Normalized per innings/match — fair regardless of matches played ({{ s1.matches }} vs {{ s2.matches }})</p>
+    <div class="h2h-bars">
+        {# Common stats for all roles #}
+        {% set common_stats = [
+            ("Avg Rating", s1.avg_overall, s2.avg_overall, false),
+            ("Best Rating", s1.best_rating, s2.best_rating, false),
+            ("MVP Rate %", s1.mvp_rate, s2.mvp_rate, false),
+        ] %}
+
+        {# Batting-specific stats #}
+        {% set bat_stats = [
+            ("Avg BAT", s1.avg_bat, s2.avg_bat, false),
+            ("Runs/Innings", s1.runs_per_match, s2.runs_per_match, false),
+            ("Strike Rate", s1.strike_rate, s2.strike_rate, false),
+            ("4s/Innings", s1.fours_per_match, s2.fours_per_match, false),
+            ("6s/Innings", s1.sixes_per_match, s2.sixes_per_match, false),
+            ("Boundary %", s1.boundary_pct, s2.boundary_pct, false),
+        ] %}
+
+        {# Bowling-specific stats #}
+        {% set bowl_stats = [
+            ("Avg BOWL", s1.avg_bowl, s2.avg_bowl, false),
+            ("Wkts/Innings", s1.wickets_per_match, s2.wickets_per_match, false),
+            ("Economy", s1.economy, s2.economy, true),
+            ("Bowling Avg", s1.bowling_avg, s2.bowling_avg, true),
+        ] %}
+
+        {# Fielding stat #}
+        {% set field_stats = [
+            ("Avg FIELD", s1.avg_field, s2.avg_field, false),
+        ] %}
+
+        {# Build the list based on player type #}
+        {% if ptype == 'batter' %}
+            {% set norm_stats = common_stats + bat_stats + field_stats %}
+        {% elif ptype == 'bowler' %}
+            {% set norm_stats = common_stats + bowl_stats + field_stats %}
+        {% else %}
+            {# all_rounder: show everything #}
+            {% set norm_stats = common_stats + bat_stats + bowl_stats + field_stats %}
+        {% endif %}
+
+        {% for label, v1, v2, lower_better in norm_stats %}
+        {% set v1_num = v1 if v1 else 0 %}
+        {% set v2_num = v2 if v2 else 0 %}
+        {% set max_val = [v1_num, v2_num, 0.1] | max %}
+        {% set p1_wins = (v1_num < v2_num) if lower_better else (v1_num > v2_num) %}
+        {% set p2_wins = (v2_num < v1_num) if lower_better else (v2_num > v1_num) %}
+        <div class="h2h-bar-row">
+            <div class="h2h-bar-left">
+                <span class="h2h-bar-value {{ 'h2h-p1-win' if p1_wins else '' }}">{{ v1_num }}</span>
+                <div class="h2h-bar-track">
+                    <div class="h2h-bar-fill left {{ 'bar-p1-win' if p1_wins else '' }}" style="width: {{ (v1_num / max_val * 100) if max_val > 0 else 0 }}%"></div>
+                </div>
+            </div>
+            <div class="h2h-bar-label">{{ label }}</div>
+            <div class="h2h-bar-right">
+                <div class="h2h-bar-track">
+                    <div class="h2h-bar-fill right {{ 'bar-p2-win' if p2_wins else '' }}" style="width: {{ (v2_num / max_val * 100) if max_val > 0 else 0 }}%"></div>
+                </div>
+                <span class="h2h-bar-value {{ 'h2h-p2-win' if p2_wins else '' }}">{{ v2_num }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Career Totals -->
+<div class="h2h-section">
+    <h3 class="section-heading">Career Totals</h3>
+    <p class="section-subheading">Raw totals — {{ s1.player_name }} ({{ s1.matches }} match{{ 'es' if s1.matches != 1 else '' }}) vs {{ s2.player_name }} ({{ s2.matches }} match{{ 'es' if s2.matches != 1 else '' }})</p>
+    <div class="h2h-bars">
+        {% set common_totals = [
+            ("Matches", s1.matches, s2.matches, false),
+            ("MVP Awards", s1.mvp_count, s2.mvp_count, false),
+        ] %}
+
+        {% set bat_totals = [
+            ("Total Runs", s1.total_runs, s2.total_runs, false),
+            ("Total 4s", s1.total_fours, s2.total_fours, false),
+            ("Total 6s", s1.total_sixes, s2.total_sixes, false),
+        ] %}
+
+        {% set bowl_totals = [
+            ("Total Wickets", s1.total_wickets, s2.total_wickets, false),
+            ("Runs Conceded", s1.total_runs_conceded, s2.total_runs_conceded, true),
+            ("Overs Bowled", s1.total_overs, s2.total_overs, false),
+        ] %}
+
+        {% if ptype == 'batter' %}
+            {% set total_stats = common_totals + bat_totals %}
+        {% elif ptype == 'bowler' %}
+            {% set total_stats = common_totals + bowl_totals %}
+        {% else %}
+            {% set total_stats = common_totals + bat_totals + bowl_totals %}
+        {% endif %}
+
+        {% for label, v1, v2, lower_better in total_stats %}
+        {% set v1_num = v1 if v1 else 0 %}
+        {% set v2_num = v2 if v2 else 0 %}
+        {% set max_val = [v1_num, v2_num, 0.1] | max %}
+        {% set p1_wins = (v1_num < v2_num) if lower_better else (v1_num > v2_num) %}
+        {% set p2_wins = (v2_num < v1_num) if lower_better else (v2_num > v1_num) %}
+        <div class="h2h-bar-row">
+            <div class="h2h-bar-left">
+                <span class="h2h-bar-value {{ 'h2h-p1-win' if p1_wins else '' }}">{{ v1_num }}</span>
+                <div class="h2h-bar-track">
+                    <div class="h2h-bar-fill left {{ 'bar-p1-win' if p1_wins else '' }}" style="width: {{ (v1_num / max_val * 100) if max_val > 0 else 0 }}%"></div>
+                </div>
+            </div>
+            <div class="h2h-bar-label">{{ label }}</div>
+            <div class="h2h-bar-right">
+                <div class="h2h-bar-track">
+                    <div class="h2h-bar-fill right {{ 'bar-p2-win' if p2_wins else '' }}" style="width: {{ (v2_num / max_val * 100) if max_val > 0 else 0 }}%"></div>
+                </div>
+                <span class="h2h-bar-value {{ 'h2h-p2-win' if p2_wins else '' }}">{{ v2_num }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+(function() {
+    const p1Name = {{ s1.player_name | tojson }};
+    const p2Name = {{ s2.player_name | tojson }};
+    const p1Type = {{ s1.player_type | tojson }};
+    const p2Type = {{ s2.player_type | tojson }};
+
+    // Raw stats for metric computation
+    const s1 = {
+        avgBat: {{ s1.avg_bat }}, avgBowl: {{ s1.avg_bowl }}, avgField: {{ s1.avg_field }},
+        sr: {{ s1.strike_rate }}, boundaryPct: {{ s1.boundary_pct }},
+        runsPerMatch: {{ s1.runs_per_match }}, sixesPerMatch: {{ s1.sixes_per_match }},
+        wktsPerMatch: {{ s1.wickets_per_match }}, economy: {{ s1.economy }},
+        bestRating: {{ s1.best_rating }}, avgOverall: {{ s1.avg_overall }},
+        bowlingAvg: {{ s1.bowling_avg }},
+    };
+    const s2 = {
+        avgBat: {{ s2.avg_bat }}, avgBowl: {{ s2.avg_bowl }}, avgField: {{ s2.avg_field }},
+        sr: {{ s2.strike_rate }}, boundaryPct: {{ s2.boundary_pct }},
+        runsPerMatch: {{ s2.runs_per_match }}, sixesPerMatch: {{ s2.sixes_per_match }},
+        wktsPerMatch: {{ s2.wickets_per_match }}, economy: {{ s2.economy }},
+        bestRating: {{ s2.best_rating }}, avgOverall: {{ s2.avg_overall }},
+        bowlingAvg: {{ s2.bowling_avg }},
+    };
+
+    // Determine which radar metrics to use based on player types
+    let labels, d1, d2;
+
+    const bothBat = (p1Type !== 'bowler' || p2Type !== 'bowler');
+    const bothBowl = (p1Type !== 'batter' || p2Type !== 'batter');
+    const anyAllRounder = (p1Type === 'all_rounder' || p2Type === 'all_rounder');
+
+    if (anyAllRounder || (bothBat && bothBowl)) {
+        // All-rounder comparison
+        labels = ['Batting Avg', 'Strike Rate', 'Boundary %', 'Bowling Avg', 'Wickets/Inn', 'Fielding'];
+        d1 = [
+            s1.avgBat,
+            normalize(s1.sr, 80, 200),
+            normalize(s1.boundaryPct, 0, 80),
+            s1.avgBowl,
+            normalize(s1.wktsPerMatch, 0, 5),
+            s1.avgField,
+        ];
+        d2 = [
+            s2.avgBat,
+            normalize(s2.sr, 80, 200),
+            normalize(s2.boundaryPct, 0, 80),
+            s2.avgBowl,
+            normalize(s2.wktsPerMatch, 0, 5),
+            s2.avgField,
+        ];
+    } else if (p1Type === 'bowler' && p2Type === 'bowler') {
+        // Bowler comparison
+        labels = ['Bowling Avg', 'Economy', 'Wickets/Inn', 'Best Rating', 'Consistency', 'Fielding'];
+        d1 = [
+            s1.avgBowl,
+            normalizeInverse(s1.economy, 4, 12),
+            normalize(s1.wktsPerMatch, 0, 5),
+            s1.bestRating,
+            s1.avgOverall,
+            s1.avgField,
+        ];
+        d2 = [
+            s2.avgBowl,
+            normalizeInverse(s2.economy, 4, 12),
+            normalize(s2.wktsPerMatch, 0, 5),
+            s2.bestRating,
+            s2.avgOverall,
+            s2.avgField,
+        ];
+    } else {
+        // Batsman comparison
+        labels = ['Batting Avg', 'Strike Rate', 'Boundary %', '6s/Inn', 'Best Rating', 'Fielding'];
+        d1 = [
+            s1.avgBat,
+            normalize(s1.sr, 80, 200),
+            normalize(s1.boundaryPct, 0, 80),
+            normalize(s1.sixesPerMatch, 0, 5),
+            s1.bestRating,
+            s1.avgField,
+        ];
+        d2 = [
+            s2.avgBat,
+            normalize(s2.sr, 80, 200),
+            normalize(s2.boundaryPct, 0, 80),
+            normalize(s2.sixesPerMatch, 0, 5),
+            s2.bestRating,
+            s2.avgField,
+        ];
+    }
+
+    // Normalize a value from [min, max] range to [0, 10]
+    function normalize(val, min, max) {
+        if (max === min) return 5;
+        return Math.max(0, Math.min(10, ((val - min) / (max - min)) * 10));
+    }
+
+    // Inverse normalize (lower is better, like economy)
+    function normalizeInverse(val, bestVal, worstVal) {
+        if (worstVal === bestVal) return 5;
+        return Math.max(0, Math.min(10, ((worstVal - val) / (worstVal - bestVal)) * 10));
+    }
+
+    // Radar chart - datamb style
+    const radarCtx = document.getElementById('radarChart').getContext('2d');
+    new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: p1Name,
+                    data: d1,
+                    borderColor: 'rgba(80, 120, 255, 0.9)',
+                    backgroundColor: 'rgba(80, 120, 255, 0.2)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: 'rgba(80, 120, 255, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                },
+                {
+                    label: p2Name,
+                    data: d2,
+                    borderColor: 'rgba(240, 80, 130, 0.9)',
+                    backgroundColor: 'rgba(240, 80, 130, 0.2)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: 'rgba(240, 80, 130, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    min: 0,
+                    max: 10,
+                    ticks: {
+                        display: false,
+                        stepSize: 2,
+                    },
+                    grid: {
+                        color: 'rgba(155, 163, 181, 0.12)',
+                        circular: true,
+                    },
+                    pointLabels: {
+                        color: '#9ba3b5',
+                        font: { size: 12, weight: '500', family: "'Inter', sans-serif" },
+                        padding: 16,
+                    },
+                    angleLines: {
+                        color: 'rgba(155, 163, 181, 0.08)',
+                    },
+                },
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(28, 31, 46, 0.95)',
+                    titleColor: '#e8eaf0',
+                    bodyColor: '#9ba3b5',
+                    borderColor: '#2a2e42',
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': ' + ctx.parsed.r.toFixed(1);
+                        }
+                    }
+                },
+            },
+            elements: {
+                line: {
+                    tension: 0.15,
+                },
+            },
+        },
+    });
+})();
+</script>
+
+{% endif %}
+{% endif %}
+{% endblock %}

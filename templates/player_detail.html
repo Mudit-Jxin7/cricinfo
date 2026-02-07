@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} - CricScore{% endblock %}
+
+{% block content %}
+<div class="player-profile">
+    <div class="profile-header">
+        <div class="profile-rating-circle rating-circle {{ _rating_color(stats.avg_overall) }}">
+            {{ stats.avg_overall }}
+        </div>
+        <div class="profile-info">
+            <h1 class="profile-name">{{ name }}</h1>
+            <p class="profile-sub">
+                Avg. Rating across {{ stats.matches }} match{{ 'es' if stats.matches != 1 else '' }}
+                {% if stats.mvp_count > 0 %}
+                <span class="profile-mvp-badge">&#9733; {{ stats.mvp_count }} MVP{{ 's' if stats.mvp_count != 1 else '' }}</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Form Guide -->
+    {% if form_guide %}
+    <div class="profile-form-guide">
+        <span class="form-label-lg">FORM</span>
+        <div class="form-dots-lg">
+            {% for r in form_guide %}
+            <div class="form-dot-lg {{ _rating_color(r) }}">{{ "%.1f"|format(r) }}</div>
+            {% endfor %}
+        </div>
+        <span class="form-hint">Last {{ form_guide|length }} match{{ 'es' if form_guide|length != 1 else '' }}</span>
+    </div>
+    {% endif %}
+
+    <div class="profile-stats-grid">
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.matches }}</div>
+            <div class="stat-label">Matches</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.avg_bat }}</div>
+            <div class="stat-label">Avg BAT</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.avg_bowl }}</div>
+            <div class="stat-label">Avg BOWL</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.best }}</div>
+            <div class="stat-label">Best Rating</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.total_runs }}</div>
+            <div class="stat-label">Total Runs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.total_wickets }}</div>
+            <div class="stat-label">Total Wickets</div>
+        </div>
+    </div>
+</div>
+
+<!-- Win/Loss Impact -->
+{% if win_loss.wins > 0 or win_loss.losses > 0 %}
+<h2 class="section-heading">Win / Loss Impact</h2>
+<div class="wl-container">
+    <div class="wl-card wl-win">
+        <div class="wl-header">
+            <span class="wl-icon">&#x2714;</span>
+            <span class="wl-title">In Wins</span>
+            <span class="wl-count">{{ win_loss.wins }} match{{ 'es' if win_loss.wins != 1 else '' }}</span>
+        </div>
+        <div class="wl-rating-big">
+            <div class="rating-circle {{ _rating_color(win_loss.avg_win) }}">
+                {{ win_loss.avg_win }}
+            </div>
+        </div>
+        <div class="wl-breakdown">
+            <div class="wl-stat">
+                <span class="wl-stat-label">BAT</span>
+                <span class="wl-stat-value">{{ win_loss.avg_bat_win }}</span>
+            </div>
+            <div class="wl-stat">
+                <span class="wl-stat-label">BOWL</span>
+                <span class="wl-stat-value">{{ win_loss.avg_bowl_win }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="wl-vs">
+        {% if win_loss.avg_win > win_loss.avg_loss %}
+        <div class="wl-diff positive">+{{ "%.1f"|format(win_loss.avg_win - win_loss.avg_loss) }}</div>
+        {% elif win_loss.avg_loss > win_loss.avg_win %}
+        <div class="wl-diff negative">-{{ "%.1f"|format(win_loss.avg_loss - win_loss.avg_win) }}</div>
+        {% else %}
+        <div class="wl-diff neutral">=</div>
+        {% endif %}
+    </div>
+    <div class="wl-card wl-loss">
+        <div class="wl-header">
+            <span class="wl-icon">&#x2718;</span>
+            <span class="wl-title">In Losses</span>
+            <span class="wl-count">{{ win_loss.losses }} match{{ 'es' if win_loss.losses != 1 else '' }}</span>
+        </div>
+        <div class="wl-rating-big">
+            <div class="rating-circle {{ _rating_color(win_loss.avg_loss) }}">
+                {{ win_loss.avg_loss }}
+            </div>
+        </div>
+        <div class="wl-breakdown">
+            <div class="wl-stat">
+                <span class="wl-stat-label">BAT</span>
+                <span class="wl-stat-value">{{ win_loss.avg_bat_loss }}</span>
+            </div>
+            <div class="wl-stat">
+                <span class="wl-stat-label">BOWL</span>
+                <span class="wl-stat-value">{{ win_loss.avg_bowl_loss }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Awards Section -->
+{% if awards %}
+<h2 class="section-heading">Awards & Badges</h2>
+<div class="awards-grid">
+    {% for a in awards %}
+    <div class="award-card" style="--award-color: {{ a.color }}">
+        <div class="award-icon">
+            {% if a.icon == 'star' %}&#9733;
+            {% elif a.icon == 'hundred' %}&#x1F4AF;
+            {% elif a.icon == 'fifty' %}50
+            {% elif a.icon == 'fire' %}&#x1F525;
+            {% elif a.icon == 'wicket' %}&#x1F3CF;
+            {% elif a.icon == 'six' %}6&#x20E3;
+            {% elif a.icon == 'consistent' %}&#x1F4AA;
+            {% elif a.icon == 'duck' %}&#x1F986;
+            {% endif %}
+        </div>
+        <div class="award-info">
+            <div class="award-label">{{ a.label }}</div>
+            <div class="award-desc">{{ a.desc }}</div>
+        </div>
+        <div class="award-count">{{ a.count }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Rating Trend Chart -->
+{% if history|length > 1 %}
+<h2 class="section-heading">Rating Trend</h2>
+<div class="chart-container">
+    <canvas id="trendChart"></canvas>
+</div>
+{% endif %}
+
+<h2 class="section-heading">Match History</h2>
+
+<div class="history-list">
+    {% for h in history|reverse %}
+    {% set opponent = h.team2 if h.team == h.team1 else h.team1 %}
+    {% set team_won = (h.winner == h.team) %}
+    <a href="/match/{{ h.match_id }}" class="match-card-link">
+        <div class="history-card {{ 'mvp-history' if h.is_mvp else '' }}">
+            <div class="history-rating">
+                <div class="rating-circle {{ _rating_color(h.overall_rating) }}">
+                    {{ "%.1f"|format(h.overall_rating) }}
+                </div>
+            </div>
+            {% if h.is_mvp %}
+            <div class="history-mvp-badge">MVP</div>
+            {% endif %}
+            <div class="history-match-info">
+                <div class="history-teams">
+                    <span class="history-player-team {{ 'team-winner' if team_won else '' }}">{{ h.team }}</span>
+                    <span class="history-vs-text">vs</span>
+                    <span class="{{ 'team-winner' if not team_won and h.winner else '' }}">{{ opponent }}</span>
+                </div>
+                <div class="history-scores">{{ h.team1_score }} &bull; {{ h.team2_score }}</div>
+                <div class="history-meta">
+                    {% if team_won %}<span class="history-result-win">Won</span>{% elif h.winner %}<span class="history-result-loss">Lost</span>{% endif %}
+                    {% if h.venue %}&bull; {{ h.venue }}{% endif %}
+                    &bull; {{ h.created_at[:10] }}
+                </div>
+            </div>
+            <div class="history-performance">
+                {% if h.did_bat %}
+                <div class="perf-item">
+                    <span class="perf-label">BAT</span>
+                    <span class="perf-value">{{ "%.1f"|format(h.batting_rating) }}</span>
+                </div>
+                {% if h.runs is not none %}
+                <div class="perf-item">
+                    <span class="perf-label">Runs</span>
+                    <span class="perf-value">{{ h.runs }}({{ h.balls }})</span>
+                </div>
+                {% endif %}
+                {% if h.fours is not none and h.fours > 0 %}
+                <div class="perf-item">
+                    <span class="perf-label">4s</span>
+                    <span class="perf-value">{{ h.fours }}</span>
+                </div>
+                {% endif %}
+                {% if h.sixes is not none and h.sixes > 0 %}
+                <div class="perf-item">
+                    <span class="perf-label">6s</span>
+                    <span class="perf-value">{{ h.sixes }}</span>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if h.did_bowl %}
+                <div class="perf-item">
+                    <span class="perf-label">BOWL</span>
+                    <span class="perf-value">{{ "%.1f"|format(h.bowling_rating) }}</span>
+                </div>
+                {% if h.wickets is not none %}
+                <div class="perf-item">
+                    <span class="perf-label">Wkts</span>
+                    <span class="perf-value">{{ h.wickets }}/{{ h.runs_conceded }}</span>
+                </div>
+                {% endif %}
+                {% if h.economy is not none and h.economy > 0 %}
+                <div class="perf-item">
+                    <span class="perf-label">Econ</span>
+                    <span class="perf-value">{{ h.economy }}</span>
+                </div>
+                {% endif %}
+                {% endif %}
+                <div class="perf-item">
+                    <span class="perf-label">FIELD</span>
+                    <span class="perf-value">{{ "%.1f"|format(h.fielding_rating) }}</span>
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if history|length > 1 %}
+<script>
+(function() {
+    const trendData = {{ trend_data | tojson }};
+    const ctx = document.getElementById('trendChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: trendData.labels,
+            datasets: [
+                {
+                    label: 'Overall',
+                    data: trendData.overall,
+                    borderColor: '#4caf50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#4caf50',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.3,
+                    fill: true,
+                },
+                {
+                    label: 'Batting',
+                    data: trendData.batting,
+                    borderColor: '#1976d2',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    pointBackgroundColor: '#1976d2',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    borderDash: [5, 3],
+                },
+                {
+                    label: 'Bowling',
+                    data: trendData.bowling,
+                    borderColor: '#ef6c00',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    pointBackgroundColor: '#ef6c00',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    borderDash: [5, 3],
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 10,
+                    ticks: { color: '#9ba3b5', stepSize: 1 },
+                    grid: { color: 'rgba(42, 46, 66, 0.5)' },
+                },
+                x: {
+                    ticks: { color: '#9ba3b5', maxRotation: 45 },
+                    grid: { color: 'rgba(42, 46, 66, 0.3)' },
+                },
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#e8eaf0', usePointStyle: true, padding: 20 },
+                },
+                tooltip: {
+                    backgroundColor: '#1c1f2e',
+                    titleColor: '#e8eaf0',
+                    bodyColor: '#9ba3b5',
+                    borderColor: '#2a2e42',
+                    borderWidth: 1,
+                    padding: 12,
+                },
+            },
+        },
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

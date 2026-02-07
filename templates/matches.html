@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Matches - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Saved Matches</h1>
+<p class="page-subtitle">Browse all matches you've rated.</p>
+
+{% if matches %}
+<div class="matches-list">
+    {% for m in matches %}
+    <a href="/match/{{ m.id }}" class="match-card-link">
+        <div class="match-list-card">
+            <div class="match-list-teams">
+                <span class="match-team {{ 'team-winner' if m.winner == m.team1 else '' }}">{{ m.team1 }}</span>
+                <span class="match-vs">vs</span>
+                <span class="match-team {{ 'team-winner' if m.winner == m.team2 else '' }}">{{ m.team2 }}</span>
+            </div>
+            <div class="match-list-scores">
+                <span class="match-score-text">{{ m.team1_score }}</span>
+                <span class="score-separator">&bull;</span>
+                <span class="match-score-text">{{ m.team2_score }}</span>
+            </div>
+            <div class="match-list-meta">
+                {% if m.mvp_name %}<span class="meta-mvp">&#9733; {{ m.mvp_name }}</span>{% endif %}
+                {% if m.venue %}<span class="meta-venue">{{ m.venue }}</span>{% endif %}
+                <span class="meta-date">{{ m.created_at[:10] }}</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">&#x1F3CF;</div>
+    <h3>No matches saved yet</h3>
+    <p>Go to <a href="/">New Match</a> to rate a match and save it.</p>
+</div>
+{% endif %}
+{% endblock %}

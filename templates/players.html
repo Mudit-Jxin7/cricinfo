@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Players - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Players</h1>
+<p class="page-subtitle">Search and explore player performance across all rated matches.</p>
+
+<div class="search-bar">
+    <form method="GET" action="/players" class="search-form">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search by player name..." class="search-input" autofocus>
+        <button type="submit" class="btn btn-primary">Search</button>
+        {% if query %}
+        <a href="/players" class="btn btn-secondary">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if players %}
+<div class="players-grid">
+    {% for p in players %}
+    <a href="/player/{{ p.player_name }}" class="player-card-link">
+        <div class="player-list-card">
+            <div class="player-list-rating">
+                <div class="rating-circle {{ _rating_color(p.avg_rating) }}">
+                    {{ p.avg_rating }}
+                </div>
+            </div>
+            <div class="player-list-info">
+                <div class="player-name">{{ p.player_name }}</div>
+                <div class="player-role">{{ p.role | replace('_', ' ') | title }}</div>
+            </div>
+            {% if p.form %}
+            <div class="form-guide" title="Last {{ p.form|length }} matches (most recent first)">
+                <span class="form-label">FORM</span>
+                <div class="form-dots">
+                    {% for r in p.form %}
+                    <span class="form-dot {{ _rating_color(r) }}" title="{{ '%.1f'|format(r) }}"></span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            <div class="player-list-stats">
+                <div class="stat-item">
+                    <span class="stat-value">{{ p.matches_played }}</span>
+                    <span class="stat-label">Matches</span>
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% elif query %}
+<div class="empty-state">
+    <h3>No players found for "{{ query }}"</h3>
+    <p>Try a different search term.</p>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">&#x1F3CF;</div>
+    <h3>No players yet</h3>
+    <p>Save a rated match to start tracking player performance.</p>
+</div>
+{% endif %}
+{% endblock %}

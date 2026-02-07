@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} - CricScore{% endblock %}
+
+{% block content %}
+<div class="player-profile">
+    <div class="profile-header">
+        <div class="profile-rating-circle rating-circle {{ _rating_color(summary.avg_overall) }}">
+            {{ summary.avg_overall }}
+        </div>
+        <div class="profile-info">
+            <h1 class="profile-name">{{ name }}</h1>
+            <p class="profile-sub">
+                Team Avg. Rating across {{ summary.total_matches }} match{{ 'es' if summary.total_matches != 1 else '' }}
+            </p>
+        </div>
+    </div>
+
+    <div class="profile-stats-grid">
+        <div class="stat-card">
+            <div class="stat-big">{{ summary.total_matches }}</div>
+            <div class="stat-label">Matches</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big team-wins">{{ summary.wins }}</div>
+            <div class="stat-label">Wins</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big team-losses">{{ summary.losses }}</div>
+            <div class="stat-label">Losses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ summary.win_pct }}%</div>
+            <div class="stat-label">Win Rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ summary.avg_bat }}</div>
+            <div class="stat-label">Avg BAT</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ summary.avg_bowl }}</div>
+            <div class="stat-label">Avg BOWL</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ summary.avg_field }}</div>
+            <div class="stat-label">Avg FIELD</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ summary.best_player_rating }}</div>
+            <div class="stat-label">Best Player Rating</div>
+        </div>
+    </div>
+</div>
+
+<!-- Rating Trend Chart -->
+{% if matches | length > 1 %}
+<h2 class="section-heading">Team Rating Trend</h2>
+<div class="chart-container">
+    <canvas id="teamTrendChart"></canvas>
+</div>
+{% endif %}
+
+<h2 class="section-heading">Match Results</h2>
+
+<div class="history-list">
+    {% for m in matches %}
+    <a href="/match/{{ m.match_id }}" class="match-card-link">
+        <div class="history-card {{ 'team-match-won' if m.won else 'team-match-lost' }}">
+            <div class="history-rating">
+                <div class="rating-circle {{ _rating_color(m.team_avg_overall) }}">
+                    {{ m.team_avg_overall }}
+                </div>
+            </div>
+            <div class="history-match-info">
+                <div class="history-teams">
+                    <span class="history-player-team {{ 'team-winner' if m.won else '' }}">{{ name }}</span>
+                    <span class="history-vs-text">vs</span>
+                    <span class="{{ 'team-winner' if not m.won and m.opponent else '' }}">{{ m.opponent }}</span>
+                </div>
+                <div class="history-scores">{{ m.team_score }} &bull; {{ m.opp_score }}</div>
+                <div class="history-meta">
+                    {% if m.won %}<span class="history-result-win">Won</span>{% else %}<span class="history-result-loss">Lost</span>{% endif %}
+                    {% if m.venue %}&bull; {{ m.venue }}{% endif %}
+                    &bull; {{ m.date }}
+                </div>
+            </div>
+            <div class="history-performance">
+                <div class="perf-item">
+                    <span class="perf-label">Team AVG</span>
+                    <span class="perf-value">{{ m.team_avg_overall }}</span>
+                </div>
+                <div class="perf-item">
+                    <span class="perf-label">BAT</span>
+                    <span class="perf-value">{{ m.team_avg_bat }}</span>
+                </div>
+                <div class="perf-item">
+                    <span class="perf-label">BOWL</span>
+                    <span class="perf-value">{{ m.team_avg_bowl }}</span>
+                </div>
+                <div class="perf-item">
+                    <span class="perf-label">Opp AVG</span>
+                    <span class="perf-value">{{ m.opp_avg_overall }}</span>
+                </div>
+                {% if m.mvp_name %}
+                <div class="perf-item">
+                    <span class="perf-label">MVP</span>
+                    <span class="perf-value perf-mvp">{{ m.mvp_name }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if matches | length > 1 %}
+<script>
+(function() {
+    // Matches are newest-first, reverse for chronological chart
+    const matches = {{ matches | tojson }};
+    const chronological = matches.slice().reverse();
+
+    const labels = chronological.map(m => 'vs ' + m.opponent);
+    const teamAvg = chronological.map(m => m.team_avg_overall);
+    const oppAvg = chronological.map(m => m.opp_avg_overall);
+
+    const ctx = document.getElementById('teamTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '{{ name }} Avg',
+                    data: teamAvg,
+                    borderColor: '#4caf50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#4caf50',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.3,
+                    fill: true,
+                },
+                {
+                    label: 'Opponent Avg',
+                    data: oppAvg,
+                    borderColor: '#ef6c00',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    pointBackgroundColor: '#ef6c00',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    borderDash: [5, 3],
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 10,
+                    ticks: { color: '#9ba3b5', stepSize: 1 },
+                    grid: { color: 'rgba(42, 46, 66, 0.5)' },
+                },
+                x: {
+                    ticks: { color: '#9ba3b5', maxRotation: 45 },
+                    grid: { color: 'rgba(42, 46, 66, 0.3)' },
+                },
+            },
+            plugins: {
+                legend: {
+                    labels: { color: '#e8eaf0', usePointStyle: true, padding: 20 },
+                },
+                tooltip: {
+                    backgroundColor: '#1c1f2e',
+                    titleColor: '#e8eaf0',
+                    bodyColor: '#9ba3b5',
+                    borderColor: '#2a2e42',
+                    borderWidth: 1,
+                    padding: 12,
+                },
+            },
+        },
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

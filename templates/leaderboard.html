@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Leaderboard</h1>
+<p class="page-subtitle">Top 10 performers across all rated matches.</p>
+
+<div class="leaderboard-tabs">
+    <button class="lb-tab active" onclick="showTab('batsmen')">Top Batsmen</button>
+    <button class="lb-tab" onclick="showTab('bowlers')">Top Bowlers</button>
+    <button class="lb-tab" onclick="showTab('allrounders')">Top All-Rounders</button>
+</div>
+
+<!-- Batsmen -->
+<div class="lb-section" id="lb-batsmen">
+    {% if batsmen %}
+    <div class="lb-table">
+        <div class="lb-header-row">
+            <span class="lb-rank">#</span>
+            <span class="lb-player">Player</span>
+            <span class="lb-stat">Matches</span>
+            <span class="lb-stat">Avg BAT</span>
+            <span class="lb-stat hide-mobile">Runs</span>
+            <span class="lb-stat hide-mobile">4s</span>
+            <span class="lb-stat hide-mobile">6s</span>
+            <span class="lb-stat">Best</span>
+        </div>
+        {% for p in batsmen %}
+        <a href="/player/{{ p.player_name }}" class="lb-row">
+            <span class="lb-rank">{{ loop.index }}</span>
+            <span class="lb-player">
+                <span class="lb-rating-dot {{ _rating_color(p.avg_rating) }}"></span>
+                {{ p.player_name }}
+            </span>
+            <span class="lb-stat">{{ p.matches }}</span>
+            <span class="lb-stat lb-highlight">{{ p.avg_rating }}</span>
+            <span class="lb-stat hide-mobile">{{ p.total_runs }}</span>
+            <span class="lb-stat hide-mobile">{{ p.total_fours }}</span>
+            <span class="lb-stat hide-mobile">{{ p.total_sixes }}</span>
+            <span class="lb-stat">{{ p.best_rating }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><h3>No data yet</h3><p>Save some matches to populate the leaderboard.</p></div>
+    {% endif %}
+</div>
+
+<!-- Bowlers -->
+<div class="lb-section" id="lb-bowlers" style="display:none">
+    {% if bowlers %}
+    <div class="lb-table">
+        <div class="lb-header-row">
+            <span class="lb-rank">#</span>
+            <span class="lb-player">Player</span>
+            <span class="lb-stat">Matches</span>
+            <span class="lb-stat">Avg BOWL</span>
+            <span class="lb-stat hide-mobile">Wickets</span>
+            <span class="lb-stat hide-mobile">Overs</span>
+            <span class="lb-stat">Best</span>
+        </div>
+        {% for p in bowlers %}
+        <a href="/player/{{ p.player_name }}" class="lb-row">
+            <span class="lb-rank">{{ loop.index }}</span>
+            <span class="lb-player">
+                <span class="lb-rating-dot {{ _rating_color(p.avg_rating) }}"></span>
+                {{ p.player_name }}
+            </span>
+            <span class="lb-stat">{{ p.matches }}</span>
+            <span class="lb-stat lb-highlight">{{ p.avg_rating }}</span>
+            <span class="lb-stat hide-mobile">{{ p.total_wickets }}</span>
+            <span class="lb-stat hide-mobile">{{ p.total_overs }}</span>
+            <span class="lb-stat">{{ p.best_rating }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><h3>No data yet</h3><p>Save some matches to populate the leaderboard.</p></div>
+    {% endif %}
+</div>
+
+<!-- All-rounders -->
+<div class="lb-section" id="lb-allrounders" style="display:none">
+    {% if all_rounders %}
+    <div class="lb-table">
+        <div class="lb-header-row">
+            <span class="lb-rank">#</span>
+            <span class="lb-player">Player</span>
+            <span class="lb-stat">Matches</span>
+            <span class="lb-stat">Avg BAT</span>
+            <span class="lb-stat">Avg BOWL</span>
+            <span class="lb-stat">Combined</span>
+            <span class="lb-stat hide-mobile">Runs</span>
+            <span class="lb-stat hide-mobile">Wkts</span>
+        </div>
+        {% for p in all_rounders %}
+        <a href="/player/{{ p.player_name }}" class="lb-row">
+            <span class="lb-rank">{{ loop.index }}</span>
+            <span class="lb-player">
+                <span class="lb-rating-dot {{ _rating_color(p.avg_combined) }}"></span>
+                {{ p.player_name }}
+            </span>
+            <span class="lb-stat">{{ p.matches }}</span>
+            <span class="lb-stat">{{ p.avg_bat }}</span>
+            <span class="lb-stat">{{ p.avg_bowl }}</span>
+            <span class="lb-stat lb-highlight">{{ p.avg_combined }}</span>
+            <span class="lb-stat hide-mobile">{{ p.total_runs }}</span>
+            <span class="lb-stat hide-mobile">{{ p.total_wickets }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><h3>No data yet</h3><p>Players who both bat and bowl will appear here.</p></div>
+    {% endif %}
+</div>
+
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.lb-section').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('lb-' + tab).style.display = 'block';
+    event.target.classList.add('active');
+}
+</script>
+{% endblock %}

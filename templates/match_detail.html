@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ match.team1 }} vs {{ match.team2 }} - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Match Ratings</h1>
+
+<div class="match-score-summary" style="margin-bottom: 32px;">
+    <div class="team-score-card {{ 'winner' if match.winner == match.team1 else '' }}">
+        <div class="team-name">{{ match.team1 }}</div>
+        <div class="team-score">{{ match.team1_score }}</div>
+    </div>
+    <div class="score-vs">vs</div>
+    <div class="team-score-card {{ 'winner' if match.winner == match.team2 else '' }}">
+        <div class="team-name">{{ match.team2 }}</div>
+        <div class="team-score">{{ match.team2_score }}</div>
+    </div>
+</div>
+
+{% if match.mvp_name %}
+<div class="mvp-banner">
+    <span class="mvp-star">&#9733;</span>
+    <span class="mvp-text">Player of the Match</span>
+    <a href="/player/{{ match.mvp_name }}" class="mvp-name">{{ match.mvp_name }}</a>
+    <span class="mvp-rating">{{ "%.1f"|format(match.mvp_rating) }}</span>
+</div>
+{% endif %}
+
+{% if match.venue %}
+<p class="match-venue-info">{{ match.venue }} &bull; {{ match.created_at[:10] }}</p>
+{% endif %}
+
+{% macro render_team(team_name, players, is_winner, mvp_name) %}
+<div class="team-ratings">
+    <div class="team-ratings-header">
+        <h3>{{ team_name }}</h3>
+        {% if is_winner %}<span class="winner-badge">Winner</span>{% endif %}
+    </div>
+    <div class="player-cards">
+        {% for p in players %}
+        <a href="/player/{{ p.player_name }}" class="player-card-link">
+            <div class="player-card {{ 'mvp-card' if p.player_name == mvp_name else '' }}">
+                {% if p.player_name == mvp_name %}
+                <div class="mvp-card-badge">MVP</div>
+                {% endif %}
+                <div class="rating-circle {{ _rating_color(p.overall_rating) }}">
+                    {{ "%.1f"|format(p.overall_rating) }}
+                </div>
+                <div class="player-info">
+                    <div class="player-name">{{ p.player_name }}</div>
+                    <div class="player-role">{{ p.role | replace('_', ' ') | title }}</div>
+                </div>
+                <div class="component-ratings">
+                    {% if p.did_bat %}
+                    <div class="component-rating">
+                        <div class="component-label">BAT</div>
+                        <div class="component-value">{{ "%.1f"|format(p.batting_rating) }}</div>
+                    </div>
+                    {% endif %}
+                    {% if p.did_bowl %}
+                    <div class="component-rating">
+                        <div class="component-label">BOWL</div>
+                        <div class="component-value">{{ "%.1f"|format(p.bowling_rating) }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="component-rating">
+                        <div class="component-label">FIELD</div>
+                        <div class="component-value">{{ "%.1f"|format(p.fielding_rating) }}</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endmacro %}
+
+{{ render_team(match.team1, team1_players, match.winner == match.team1, match.mvp_name) }}
+{{ render_team(match.team2, team2_players, match.winner == match.team2, match.mvp_name) }}
+{% endblock %}

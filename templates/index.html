@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}CricScore - Enter Match Data{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h1 class="page-title">Enter Match Data</h1>
+    <p class="page-subtitle">Fill in the scorecard details for both innings. The rating engine will analyze context, impact, and match situation to generate player ratings.</p>
+
+    <form id="matchForm" class="match-form">
+
+        <!-- Match Info -->
+        <section class="form-section">
+            <h2 class="section-title">Match Information</h2>
+            <div class="form-grid match-info-grid">
+                <div class="form-group">
+                    <label for="team1_name">Team 1 (Batted First)</label>
+                    <input type="text" id="team1_name" name="team1_name" placeholder="e.g. India" required>
+                </div>
+                <div class="form-group">
+                    <label for="team2_name">Team 2 (Batted Second)</label>
+                    <input type="text" id="team2_name" name="team2_name" placeholder="e.g. Australia" required>
+                </div>
+                <div class="form-group">
+                    <label for="winner">Winner</label>
+                    <select id="winner" name="winner">
+                        <option value="">-- Select --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="venue">Venue (optional)</label>
+                    <input type="text" id="venue" name="venue" placeholder="e.g. Wankhede Stadium">
+                </div>
+            </div>
+        </section>
+
+        <!-- First Innings -->
+        <section class="form-section innings-section">
+            <h2 class="section-title">
+                <span class="innings-badge">1st Innings</span>
+                <span class="innings-team-name" id="innings1_team_label">Team 1</span>
+            </h2>
+
+            <!-- Innings totals -->
+            <div class="form-grid innings-total-grid">
+                <div class="form-group">
+                    <label>Total Runs</label>
+                    <input type="number" name="fi_total_runs" min="0" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Wickets</label>
+                    <input type="number" name="fi_total_wickets" min="0" max="10" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Overs</label>
+                    <input type="number" name="fi_total_overs" min="0" max="20" step="0.1" value="20" required>
+                </div>
+            </div>
+
+            <!-- Batting Card -->
+            <div class="sub-section">
+                <h3 class="sub-title">Batting</h3>
+                <div class="table-responsive">
+                    <table class="scorecard-table" id="fi_batting_table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Runs</th>
+                                <th>Balls</th>
+                                <th>4s</th>
+                                <th>6s</th>
+                                <th>Dismissal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-add" onclick="addBattingRow('fi_batting_table')">+ Add Batsman</button>
+            </div>
+
+            <!-- Bowling Card (Team 2 bowled in 1st innings) -->
+            <div class="sub-section">
+                <h3 class="sub-title">Bowling <span class="sub-hint" id="fi_bowling_hint">(Team 2 bowlers)</span></h3>
+                <div class="table-responsive">
+                    <table class="scorecard-table" id="fi_bowling_table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Overs</th>
+                                <th>M</th>
+                                <th>Runs</th>
+                                <th>Wkts</th>
+                                <th>Wd</th>
+                                <th>NB</th>
+                                <th>Dismissed Batsmen Runs</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-add" onclick="addBowlingRow('fi_bowling_table')">+ Add Bowler</button>
+            </div>
+
+            <!-- Fielding Events (during 1st innings - by Team 2 fielders) -->
+            <div class="sub-section">
+                <h3 class="sub-title">Fielding Events <span class="sub-hint" id="fi_fielding_hint">(Team 2 fielders)</span></h3>
+                <div class="table-responsive">
+                    <table class="scorecard-table" id="fi_fielding_table">
+                        <thead>
+                            <tr>
+                                <th>Fielder Name</th>
+                                <th>Event</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-add" onclick="addFieldingRow('fi_fielding_table')">+ Add Fielding Event</button>
+            </div>
+        </section>
+
+        <!-- Second Innings -->
+        <section class="form-section innings-section">
+            <h2 class="section-title">
+                <span class="innings-badge innings-badge-2">2nd Innings</span>
+                <span class="innings-team-name" id="innings2_team_label">Team 2</span>
+            </h2>
+
+            <!-- Innings totals -->
+            <div class="form-grid innings-total-grid">
+                <div class="form-group">
+                    <label>Total Runs</label>
+                    <input type="number" name="si_total_runs" min="0" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Wickets</label>
+                    <input type="number" name="si_total_wickets" min="0" max="10" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Overs</label>
+                    <input type="number" name="si_total_overs" min="0" max="20" step="0.1" value="20" required>
+                </div>
+            </div>
+
+            <!-- Batting Card -->
+            <div class="sub-section">
+                <h3 class="sub-title">Batting</h3>
+                <div class="table-responsive">
+                    <table class="scorecard-table" id="si_batting_table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Runs</th>
+                                <th>Balls</th>
+                                <th>4s</th>
+                                <th>6s</th>
+                                <th>Dismissal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-add" onclick="addBattingRow('si_batting_table')">+ Add Batsman</button>
+            </div>
+
+            <!-- Bowling Card (Team 1 bowled in 2nd innings) -->
+            <div class="sub-section">
+                <h3 class="sub-title">Bowling <span class="sub-hint" id="si_bowling_hint">(Team 1 bowlers)</span></h3>
+                <div class="table-responsive">
+                    <table class="scorecard-table" id="si_bowling_table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Overs</th>
+                                <th>M</th>
+                                <th>Runs</th>
+                                <th>Wkts</th>
+                                <th>Wd</th>
+                                <th>NB</th>
+                                <th>Dismissed Batsmen Runs</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-add" onclick="addBowlingRow('si_bowling_table')">+ Add Bowler</button>
+            </div>
+
+            <!-- Fielding Events (during 2nd innings - by Team 1 fielders) -->
+            <div class="sub-section">
+                <h3 class="sub-title">Fielding Events <span class="sub-hint" id="si_fielding_hint">(Team 1 fielders)</span></h3>
+                <div class="table-responsive">
+                    <table class="scorecard-table" id="si_fielding_table">
+                        <thead>
+                            <tr>
+                                <th>Fielder Name</th>
+                                <th>Event</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn btn-add" onclick="addFieldingRow('si_fielding_table')">+ Add Fielding Event</button>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">Calculate Ratings</button>
+        </div>
+    </form>
+
+    <!-- Results Section (hidden initially) -->
+    <div id="resultsSection" class="results-section" style="display: none;">
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Teams - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Teams</h1>
+<p class="page-subtitle">All teams with their results and average player ratings.</p>
+
+{% if teams %}
+<div class="teams-grid">
+    {% for t in teams %}
+    <a href="/team/{{ t.team }}" class="match-card-link">
+        <div class="team-card">
+            <div class="team-card-main">
+                <div class="team-card-rating">
+                    <div class="rating-circle {{ _rating_color(t.avg_rating) }}">
+                        {{ t.avg_rating }}
+                    </div>
+                </div>
+                <div class="team-card-info">
+                    <div class="team-card-name">{{ t.team }}</div>
+                    <div class="team-card-record">
+                        {{ t.total_matches }} match{{ 'es' if t.total_matches != 1 else '' }}
+                        &middot;
+                        <span class="team-wins">{{ t.wins }}W</span> /
+                        <span class="team-losses">{{ t.losses }}L</span>
+                    </div>
+                </div>
+            </div>
+            <div class="team-card-stats">
+                <div class="stat-item">
+                    <span class="stat-value">{{ t.avg_bat }}</span>
+                    <span class="stat-label">Avg BAT</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ t.avg_bowl }}</span>
+                    <span class="stat-label">Avg BOWL</span>
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">&#x1F3CF;</div>
+    <h3>No teams yet</h3>
+    <p>Teams will appear here once you <a href="/">rate a match</a>.</p>
+</div>
+{% endif %}
+{% endblock %}
