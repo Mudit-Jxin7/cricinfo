@@ -341,7 +341,8 @@ def get_top_batsmen(limit=10):
                SUM(balls) as total_balls,
                SUM(fours) as total_fours,
                SUM(sixes) as total_sixes,
-               MAX(overall_rating) as best_rating
+               MAX(overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT team) as teams
         FROM player_ratings
         WHERE did_bat = 1
         GROUP BY LOWER(player_name)
@@ -362,7 +363,8 @@ def get_top_bowlers(limit=10):
                SUM(wickets) as total_wickets,
                SUM(overs_bowled) as total_overs,
                SUM(runs_conceded) as total_runs_conceded,
-               MAX(overall_rating) as best_rating
+               MAX(overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT team) as teams
         FROM player_ratings
         WHERE did_bowl = 1
         GROUP BY LOWER(player_name)
@@ -384,7 +386,8 @@ def get_top_all_rounders(limit=10):
                ROUND((AVG(batting_rating) + AVG(bowling_rating)) / 2, 2) as avg_combined,
                SUM(runs) as total_runs,
                SUM(wickets) as total_wickets,
-               MAX(overall_rating) as best_rating
+               MAX(overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT team) as teams
         FROM player_ratings
         WHERE did_bat = 1 AND did_bowl = 1
         GROUP BY LOWER(player_name)

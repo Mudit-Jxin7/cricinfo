@@ -7,7 +7,7 @@ Various factors push the rating up or down.
 from __future__ import annotations
 
 from .context import MatchContext, get_strike_rate_context_adjustment, get_chase_pressure_factor
-from .models import BattingEntry, DismissalType
+from .models import BattingEntry, DismissalType, PlayerRole
 
 
 def calculate_batting_rating(
@@ -27,6 +27,9 @@ def calculate_batting_rating(
     base = 5.0
     details: dict = {}
 
+    # Bowlers get reduced penalties for batting metrics (SR, boundary %, chase)
+    is_bowler = entry.role in (PlayerRole.BOWLER, PlayerRole.BOWLING_ALL_ROUNDER)
+
     # ── 1. Runs scored component (0 to +3.0) ──
     runs_score = _runs_component(entry.runs)
     details["runs"] = {"value": entry.runs, "score": round(runs_score, 2)}
@@ -44,6 +47,9 @@ def calculate_batting_rating(
             sr_score *= 0.75
     else:
         sr_score = 0.0
+    # Bowlers get reduced penalty for poor strike rate
+    if is_bowler and sr_score < 0:
+        sr_score *= 0.5
     details["strike_rate"] = {
         "value": round(entry.strike_rate, 1),
         "score": round(sr_score, 2),
@@ -71,6 +77,9 @@ def calculate_batting_rating(
             boundary_score *= 0.5
     else:
         boundary_score = 0.0
+    # Bowlers get reduced penalty for low boundary %
+    if is_bowler and boundary_score < 0:
+        boundary_score *= 0.5
     details["boundary_pct"] = {
         "value": round(entry.boundary_percentage, 1),
         "score": round(boundary_score, 2),
@@ -147,6 +156,9 @@ def calculate_batting_rating(
         # Scale down for very short innings
         if entry.balls < 5:
             chase_score *= 0.5
+    # Bowlers get reduced penalty for failing under chase pressure
+    if is_bowler and chase_score < 0:
+        chase_score *= 0.5
     details["chase_pressure"] = {"rrr": round(ctx.required_run_rate, 2), "score": round(chase_score, 2)}
 
     # ── 9. Cameo impact bonus (short explosive innings) ──

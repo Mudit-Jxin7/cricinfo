@@ -50,14 +50,12 @@ def calculate_bowling_rating(
     details["maidens"] = {"value": entry.maidens, "score": round(maiden_score, 2)}
 
     # ── 4. Overs bowled modifier ──
-    # Bowling full quota (4 overs) shows trust; short spells are discounted
+    # Bowling full quota (4 overs) shows trust; no penalty for short spells
     quota_score = 0.0
     if overs_bowled >= 4.0:
         quota_score = 0.1  # completed full quota
     elif overs_bowled >= 3.0:
         quota_score = 0.05
-    elif overs_bowled < 2.0:
-        quota_score = -0.2  # very short spell
     details["overs_bowled"] = {
         "value": round(overs_bowled, 1),
         "score": round(quota_score, 2),
@@ -92,18 +90,8 @@ def calculate_bowling_rating(
             result_score = 0.0  # great individual effort
     details["match_result"] = {"won": is_winning_team, "score": round(result_score, 2)}
 
-    # ── 7. Extras penalty (-0.0 to -1.0) ──
-    extras = entry.wides + entry.no_balls
-    if extras >= 8:
-        extras_score = -1.0
-    elif extras >= 5:
-        extras_score = -0.6
-    elif extras >= 3:
-        extras_score = -0.3
-    elif extras >= 1:
-        extras_score = -0.1
-    else:
-        extras_score = 0.0
+    # ── 7. Extras penalty: -0.05 per wide, -0.2 per no ball ──
+    extras_score = -(entry.wides * 0.05 + entry.no_balls * 0.2)
     details["extras"] = {
         "wides": entry.wides,
         "no_balls": entry.no_balls,

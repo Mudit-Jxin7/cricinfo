@@ -30,7 +30,10 @@
             <span class="lb-rank">{{ loop.index }}</span>
             <span class="lb-player">
                 <span class="lb-rating-dot {{ _rating_color(p.avg_rating) }}"></span>
-                {{ p.player_name }}
+                <span class="lb-player-info">
+                    <span class="lb-player-name">{{ p.player_name }}</span>
+                    {% if p.teams %}<span class="lb-player-team">{{ p.teams }}</span>{% endif %}
+                </span>
             </span>
             <span class="lb-stat">{{ p.matches }}</span>
             <span class="lb-stat lb-highlight">{{ p.avg_rating }}</span>
@@ -64,7 +67,10 @@
             <span class="lb-rank">{{ loop.index }}</span>
             <span class="lb-player">
                 <span class="lb-rating-dot {{ _rating_color(p.avg_rating) }}"></span>
-                {{ p.player_name }}
+                <span class="lb-player-info">
+                    <span class="lb-player-name">{{ p.player_name }}</span>
+                    {% if p.teams %}<span class="lb-player-team">{{ p.teams }}</span>{% endif %}
+                </span>
             </span>
             <span class="lb-stat">{{ p.matches }}</span>
             <span class="lb-stat lb-highlight">{{ p.avg_rating }}</span>
@@ -98,7 +104,10 @@
             <span class="lb-rank">{{ loop.index }}</span>
             <span class="lb-player">
                 <span class="lb-rating-dot {{ _rating_color(p.avg_combined) }}"></span>
-                {{ p.player_name }}
+                <span class="lb-player-info">
+                    <span class="lb-player-name">{{ p.player_name }}</span>
+                    {% if p.teams %}<span class="lb-player-team">{{ p.teams }}</span>{% endif %}
+                </span>
             </span>
             <span class="lb-stat">{{ p.matches }}</span>
             <span class="lb-stat">{{ p.avg_bat }}</span>
