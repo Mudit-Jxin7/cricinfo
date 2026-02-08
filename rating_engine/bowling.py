@@ -79,16 +79,8 @@ def calculate_bowling_rating(
         "score": round(wq_score, 2),
     }
 
-    # ── 6. Match result modifier (-0.3 to +0.5) ──
-    if is_winning_team:
-        result_score = 0.3
-        if entry.wickets >= 2:
-            result_score = 0.5
-    else:
-        result_score = -0.2
-        if entry.wickets >= 3:
-            result_score = 0.0  # great individual effort
-    details["match_result"] = {"won": is_winning_team, "score": round(result_score, 2)}
+    # ── 6. Match result (informational only, no score impact) ──
+    details["match_result"] = {"won": is_winning_team, "score": 0.0}
 
     # ── 7. Extras penalty: -0.05 per wide, -0.2 per no ball ──
     extras_score = -(entry.wides * 0.05 + entry.no_balls * 0.2)
@@ -100,7 +92,7 @@ def calculate_bowling_rating(
 
     # ── Combine ──
     total = base + wicket_score + eco_score + maiden_score
-    total += quota_score + wq_score + result_score + extras_score
+    total += quota_score + wq_score + extras_score
 
     total = max(0.0, min(10.0, total))
     total = round(total, 1)

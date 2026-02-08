@@ -125,23 +125,8 @@ def calculate_batting_rating(
             notout_score = 0.15
     details["not_out_chase"] = {"score": round(notout_score, 2)}
 
-    # ── 7. Match result modifier (-0.3 to +0.5) ──
-    if is_winning_team:
-        result_score = 0.3
-        # Extra bonus if this batsman was a key contributor (>30 runs)
-        if entry.runs >= 30:
-            result_score = 0.5
-    else:
-        result_score = -0.2
-        # Reduce penalty if batsman personally scored well
-        if entry.runs >= 50:
-            result_score = 0.0
-        elif entry.runs >= 40:
-            result_score = -0.1
-    # Bowlers get reduced match result impact on batting rating
-    if is_bowler and result_score < 0:
-        result_score *= 0.5
-    details["match_result"] = {"won": is_winning_team, "score": round(result_score, 2)}
+    # ── 7. Match result (informational only, no score impact) ──
+    details["match_result"] = {"won": is_winning_team, "score": 0.0}
 
     # ── 8. Chase pressure bonus (-0.5 to +1.0) ──
     chase_score = 0.0
@@ -192,7 +177,7 @@ def calculate_batting_rating(
 
     # ── Combine ──
     total = base + runs_score + sr_score + boundary_score + anchor_score + position_score
-    total += notout_score + result_score + chase_score + cameo_score + duck_score
+    total += notout_score + chase_score + cameo_score + duck_score
 
     # Clamp to 0-10
     total = max(0.0, min(10.0, total))

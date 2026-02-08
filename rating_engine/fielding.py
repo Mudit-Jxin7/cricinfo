@@ -1,6 +1,6 @@
 """Fielding rating calculator.
 
-Fielding starts at a neutral 5.0 base.
+Fielding starts at a neutral 8.0 base.
 Events push the rating up or down.
 """
 
@@ -31,7 +31,7 @@ def calculate_fielding_rating(
     Returns:
         (rating, details_dict) with breakdown.
     """
-    base = 5.0
+    base = 8.0
     total_adjustment = 0.0
     event_details: list[dict] = []
 
