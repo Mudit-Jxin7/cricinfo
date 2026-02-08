@@ -38,6 +38,9 @@ def calculate_batting_rating(
     if entry.balls >= 2:  # need at least 2 balls to judge SR
         match_sr = ctx.match_run_rate * 100 / 6 if ctx.match_run_rate > 0 else 130.0
         sr_score = get_strike_rate_context_adjustment(entry.strike_rate, match_sr)
+        # Don't penalize for poor SR if balls < 4, but still reward good SR
+        if entry.balls < 4 and sr_score < 0:
+            sr_score = 0.0
         # Scale down SR impact for shorter innings
         if entry.balls < 5:
             sr_score *= 0.35
@@ -70,6 +73,9 @@ def calculate_batting_rating(
             boundary_score = 0.0
         else:
             boundary_score = -0.3
+        # Don't penalize for low boundary % if balls < 4, but still reward high %
+        if entry.balls < 4 and boundary_score < 0:
+            boundary_score = 0.0
         # Short innings discount
         if entry.balls < 5:
             boundary_score *= 0.35
@@ -141,6 +147,9 @@ def calculate_batting_rating(
         else:
             # Failed under pressure
             chase_score = -pressure * 0.5
+        # Don't penalize for failing under chase pressure if balls < 4
+        if entry.balls < 4 and chase_score < 0:
+            chase_score = 0.0
         # Scale down for very short innings
         if entry.balls < 5:
             chase_score *= 0.5
@@ -152,7 +161,7 @@ def calculate_batting_rating(
     # ── 9. Cameo impact bonus (short explosive innings) ──
     cameo_score = 0.0
     if entry.balls >= 2 and entry.balls <= 10 and entry.strike_rate >= 180:
-        # Reward explosive cameos -- a 7(2) with a six is impactful
+        # Reward explosive cameos -- a 10(3) with boundaries is impactful
         impact = entry.runs / entry.balls  # runs per ball
         if impact >= 3.0:
             cameo_score = 0.8
