@@ -103,7 +103,7 @@ function addBattingRow(tableId) {
         <td><input type="number" min="0" value="0"></td>
         <td><input type="number" min="0" value="0"></td>
         <td><input type="number" min="0" value="0"></td>
-        <td>${createSelectHTML(DISMISSAL_OPTIONS, 'dismissal', 'not_out')}</td>
+        <td>${createSelectHTML(DISMISSAL_OPTIONS, 'dismissal', 'caught')}</td>
         <td><button type="button" class="btn btn-remove" onclick="removeRow(this)" title="Remove">&times;</button></td>
     `;
     tbody.appendChild(tr);
