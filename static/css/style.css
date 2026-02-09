@@ -1914,109 +1914,6 @@ body {
     font-size: 0.78rem !important;
 }
 
-/* ===== Rosters ===== */
-.roster-create-section {
-    margin-bottom: 28px;
-}
-
-.roster-create-form,
-.roster-add-form {
-    display: flex;
-    gap: 10px;
-    max-width: 500px;
-}
-
-.roster-add-section {
-    margin-bottom: 28px;
-}
-
-.rosters-grid {
-    display: grid;
-    gap: 10px;
-}
-
-.roster-card-link {
-    text-decoration: none;
-    color: inherit;
-}
-
-.roster-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 18px 24px;
-    transition: all 0.2s;
-}
-
-.roster-card:hover {
-    background: var(--bg-card-hover);
-    border-color: rgba(76, 175, 80, 0.3);
-}
-
-.roster-card-name {
-    font-size: 1.05rem;
-    font-weight: 600;
-}
-
-.roster-card-meta {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-top: 2px;
-}
-
-.roster-card-arrow {
-    font-size: 1.2rem;
-    color: var(--text-muted);
-}
-
-.roster-header {
-    margin-top: 24px;
-}
-
-.roster-header-top {
-    margin-bottom: 12px;
-}
-
-.roster-title-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.roster-title-row .page-title {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-.roster-rename-form {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    max-width: 400px;
-    margin-top: 8px;
-    margin-bottom: 8px;
-}
-
-.roster-team-stats {
-    margin-bottom: 32px;
-}
-
-.roster-players-section {
-    margin-bottom: 32px;
-}
-
-.roster-player-card {
-    position: relative;
-}
-
-.roster-player-card .btn-remove {
-    flex-shrink: 0;
-}
-
 .inline-form {
     display: inline;
 }
@@ -2176,18 +2073,6 @@ body {
 
     .wl-vs {
         padding: 4px 0;
-    }
-
-    .roster-create-form,
-    .roster-add-form {
-        flex-direction: column;
-        max-width: 100%;
-    }
-
-    .roster-title-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
     }
 
     .team-card {
