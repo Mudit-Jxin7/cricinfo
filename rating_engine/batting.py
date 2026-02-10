@@ -24,11 +24,15 @@ def calculate_batting_rating(
     if not entry.did_bat:
         return 5.0, {"note": "Did not bat"}
 
-    base = 5.0
-    details: dict = {}
-
     # Bowlers get reduced penalties for batting metrics (SR, boundary %, chase)
     is_bowler = entry.role in (PlayerRole.BOWLER, PlayerRole.BOWLING_ALL_ROUNDER)
+    
+    # If bowler faced 0 balls, return neutral rating (no batting evaluation)
+    if is_bowler and entry.balls == 0:
+        return 5.0, {"note": "Bowler - no balls faced"}
+
+    base = 5.0
+    details: dict = {}
 
     # ── 1. Runs scored component (0 to +3.0) ──
     runs_score = _runs_component(entry.runs)
@@ -198,11 +202,14 @@ def calculate_batting_rating(
     details["cameo_impact"] = {"score": round(cameo_score, 2)}
 
     # ── 10. Duck penalty ──
+    # Duck penalties only apply to batsmen, not bowlers
     duck_score = 0.0
-    if entry.is_golden_duck:
-        duck_score = -2.0
-    elif entry.is_duck:
-        duck_score = -1.0
+    if not is_bowler:
+        # Only apply duck penalties to batsmen who faced at least 6 balls
+        if entry.is_golden_duck:
+            duck_score = -2.0
+        elif entry.is_duck:
+            duck_score = -1.0
     details["duck"] = {"score": round(duck_score, 2)}
 
     # ── Combine ──
