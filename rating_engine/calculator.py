@@ -130,6 +130,7 @@ def _rate_innings_players(
             "rating": rating,
             "details": details,
             "did_bat": entry.did_bat,
+            "balls": entry.balls,
         })
 
     # Bowling entries come from the bowling_innings
@@ -145,6 +146,7 @@ def _rate_innings_players(
             "rating": rating,
             "details": details,
             "did_bowl": entry.did_bowl,
+            "total_balls": entry.total_balls,
         })
 
     # Fielding ratings for the bowling/fielding team
@@ -211,10 +213,28 @@ def _merge_team_ratings(
         bowl_details = bowl_info["details"] if bowl_info else {}
         field_details = field_info["details"] if field_info else {}
 
-        # Get weights based on role
-        bat_w, bowl_w, field_w = ROLE_WEIGHTS.get(
-            role, ROLE_WEIGHTS[PlayerRole.BATTER]
-        )
+        # Get balls information for weight redistribution check
+        bat_balls = bat_info.get("balls", 0) if bat_info else 0
+        bowl_balls = bowl_info.get("total_balls", 0) if bowl_info else 0
+
+        # Check if batsman bowled >= 6 balls or bowler batted >= 6 balls
+        # If so, redistribute weights to: 0.75 batting, 0.15 bowling, 0.1 fielding
+        should_redistribute = False
+        if did_bat and bowl_balls >= 6:
+            # Batsman also bowled at least 6 balls
+            should_redistribute = True
+        elif did_bowl and bat_balls >= 6:
+            # Bowler also batted at least 6 balls
+            should_redistribute = True
+
+        if should_redistribute:
+            # Use redistributed weights: 0.75 batting, 0.15 bowling, 0.1 fielding
+            bat_w, bowl_w, field_w = 0.75, 0.15, 0.1
+        else:
+            # Get weights based on role
+            bat_w, bowl_w, field_w = ROLE_WEIGHTS.get(
+                role, ROLE_WEIGHTS[PlayerRole.BATTER]
+            )
 
         # If player didn't bat or bowl, adjust weights
         if not did_bat and not did_bowl:
