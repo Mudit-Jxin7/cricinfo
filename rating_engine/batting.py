@@ -92,8 +92,28 @@ def calculate_batting_rating(
     }
 
     # ── 4. Balls faced / anchoring context (-0.5 to +0.5) ──
+    # Position-aware anchor scoring: openers need more balls, lower order needs fewer
     anchor_score = 0.0
-    if entry.balls >= 30:
+    
+    # Determine minimum balls required based on batting position
+    if entry.batting_position <= 2:
+        # Openers: need 30+ balls to anchor
+        min_balls_anchor = 30
+        min_balls_partial = 25
+    elif entry.batting_position <= 4:
+        # Top-middle order: need 25+ balls
+        min_balls_anchor = 25
+        min_balls_partial = 20
+    elif entry.batting_position <= 6:
+        # Middle order: need 20+ balls
+        min_balls_anchor = 20
+        min_balls_partial = 15
+    else:
+        # Lower order: need 15+ balls
+        min_balls_anchor = 15
+        min_balls_partial = 12
+    
+    if entry.balls >= min_balls_anchor:
         # Long innings - reward if SR is decent, penalize if too slow
         if entry.strike_rate >= 120:
             anchor_score = 0.5  # anchored AND scored fast
@@ -101,7 +121,8 @@ def calculate_batting_rating(
             anchor_score = 0.2
         else:
             anchor_score = -0.3  # too slow for T20
-    elif entry.balls >= 20:
+    elif entry.balls >= min_balls_partial:
+        # Partial anchor - reward good SR, penalize poor SR
         if entry.strike_rate >= 130:
             anchor_score = 0.3
         elif entry.strike_rate < 90:
