@@ -219,13 +219,16 @@ def _merge_team_ratings(
 
         # Check if batsman bowled >= 6 balls or bowler batted >= 6 balls
         # If so, redistribute weights to: 0.75 batting, 0.15 bowling, 0.1 fielding
+        # BUT: Don't redistribute for all-rounders (they already have balanced weights)
+        is_all_rounder = role in (PlayerRole.BATTING_ALL_ROUNDER, PlayerRole.BOWLING_ALL_ROUNDER)
         should_redistribute = False
-        if did_bat and bowl_balls >= 6:
-            # Batsman also bowled at least 6 balls
-            should_redistribute = True
-        elif did_bowl and bat_balls >= 6:
-            # Bowler also batted at least 6 balls
-            should_redistribute = True
+        if not is_all_rounder:
+            if did_bat and bowl_balls >= 6:
+                # Batsman also bowled at least 6 balls
+                should_redistribute = True
+            elif did_bowl and bat_balls >= 6:
+                # Bowler also batted at least 6 balls
+                should_redistribute = True
 
         if should_redistribute:
             # Use redistributed weights: 0.75 batting, 0.15 bowling, 0.1 fielding
