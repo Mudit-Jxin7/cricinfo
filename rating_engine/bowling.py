@@ -102,8 +102,15 @@ def calculate_bowling_rating(
 
 
 def _wickets_component(wickets: int) -> float:
-    """Map wickets to a 0 to +3.0 score."""
-    mapping = {0: 0.0, 1: 1.0, 2: 1.8, 3: 2.5, 4: 2.8, 5: 3.0}
-    if wickets in mapping:
-        return mapping[wickets]
-    return 3.0  # 5+ wickets all get max
+    """Map wickets to a score. Each wicket gives at least 1.25 points."""
+    if wickets == 0:
+        return 0.0
+    elif wickets == 1:
+        return 1.0
+    elif wickets == 2:
+        return 2.2  # 1.25 per wicket
+    elif wickets == 3:
+        return 3.5  # 1.25 per wicket
+    else:
+        # 6+ wickets: 1.25 per wicket
+        return 5.0
