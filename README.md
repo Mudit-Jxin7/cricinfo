@@ -27,11 +27,13 @@ A SoFaScore-inspired player rating system (0-10) for T20 cricket matches. Unlike
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the app
+# Run the app (database will be created automatically)
 python app.py
 ```
 
 Open http://localhost:5050 in your browser.
+
+The SQLite database (`cricscore.db`) will be created automatically on first run.
 
 ## How It Works
 
@@ -44,7 +46,11 @@ Open http://localhost:5050 in your browser.
 Each player gets three component ratings:
 
 - **Batting**: Runs, strike rate (relative to match), boundary %, anchoring, batting position, chase pressure, duck penalties, match result
-- **Bowling**: Wickets, economy (relative to match), dot ball %, maidens, overs bowled, wicket quality, extras, match result
+  - Strike rate and boundary % only evaluated if player faces at least 4 balls (but still rewarded if excellent)
+  - Anchor score is position-aware: openers need 30+ balls, middle order needs 20-25 balls, lower order needs 15+ balls
+  - Duck penalties only apply to batsmen (not bowlers) who face at least 6 balls
+- **Bowling**: Wickets (1.25+ points per wicket), economy (relative to match), maidens, overs bowled, wicket quality, extras, match result
+  - Each wicket gives at least 1.25 points (linear scaling: 1 wicket = 1.25, 2 wickets = 2.50, etc.)
 - **Fielding**: Catches (+1.0), direct run outs (+1.5), stumpings (+1.0), dropped catches (-1.5), misfields (-0.5)
 
 These are combined using role-based weights:
@@ -52,12 +58,32 @@ These are combined using role-based weights:
 | Role | Batting | Bowling | Fielding |
 |------|---------|---------|----------|
 | Batter | 80% | 5% | 15% |
-| Bowler | 15% | 70% | 15% |
-| All-Rounder | 45% | 40% | 15% |
-| Wicket-Keeper | 65% | 5% | 30% |
+| Bowler | 5% | 80% | 15% |
+| Batting All-Rounder | 55% | 30% | 15% |
+| Bowling All-Rounder | 30% | 55% | 15% |
+| Wicket-Keeper | 75% | 0% | 25% |
+
+**Special Cases:**
+- **Bowlers who face < 6 balls**: Batting weight set to 0, redistributed to bowling and fielding
+- **All-rounders**: Keep their role-based weights (no redistribution even if they bat/bowl significantly)
+- **Pure batters/bowlers who cross over**: If a batter bowls ≥6 balls or a bowler bats ≥6 balls, weights redistribute to 75% batting, 15% bowling, 10% fielding
+
+**MVP Selection:**
+- Highest overall rating wins
+- Tiebreaker: Higher bowling rating, then higher batting rating
+
+## Features
+
+- **Match Management**: Save matches to database, view match history, player statistics
+- **Player Profiles**: Track individual player performance over time with form graphs
+- **Team Statistics**: View team performance, win/loss records, and team comparisons
+- **Leaderboards**: Top performers by batting, bowling, and all-round performance
+- **Player Comparison**: Head-to-head comparison between any two players
+- **Default Settings**: Dismissal type defaults to "caught" for faster data entry
 
 ## Tech Stack
 
 - Python 3.10+ / Flask
+- SQLite database for match and player data persistence
 - Vanilla HTML, CSS, JavaScript
-- No database required (stateless computation)
+- Chart.js for performance visualizations
