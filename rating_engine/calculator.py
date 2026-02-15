@@ -217,22 +217,23 @@ def _merge_team_ratings(
         bat_balls = bat_info.get("balls", 0) if bat_info else 0
         bowl_balls = bowl_info.get("total_balls", 0) if bowl_info else 0
 
-        # Check if batsman bowled >= 6 balls or bowler batted >= 6 balls
-        # If so, redistribute weights to: 0.75 batting, 0.15 bowling, 0.1 fielding
-        # BUT: Don't redistribute for all-rounders (they already have balanced weights)
+        # When a batter bowls 6+ balls or a bowler bats 6+ balls, give some weight to the
+        # other skill, but keep the primary role dominant (so a bowler's overall stays
+        # bowling-driven and a batter's overall stays batting-driven).
+        # Don't change weights for all-rounders (they already have balanced weights).
         is_all_rounder = role in (PlayerRole.BATTING_ALL_ROUNDER, PlayerRole.BOWLING_ALL_ROUNDER)
-        should_redistribute = False
+        is_bowler_role = role in (PlayerRole.BOWLER, PlayerRole.BOWLING_ALL_ROUNDER)
         if not is_all_rounder:
-            if did_bat and bowl_balls >= 6:
-                # Batsman also bowled at least 6 balls
-                should_redistribute = True
-            elif did_bowl and bat_balls >= 6:
-                # Bowler also batted at least 6 balls
-                should_redistribute = True
-
-        if should_redistribute:
-            # Use redistributed weights: 0.75 batting, 0.15 bowling, 0.1 fielding
-            bat_w, bowl_w, field_w = 0.75, 0.15, 0.1
+            if did_bat and bowl_balls >= 6 and not is_bowler_role:
+                # Batter also bowled at least 6 balls: batting stays primary
+                bat_w, bowl_w, field_w = 0.75, 0.15, 0.1
+            elif did_bowl and bat_balls >= 6 and is_bowler_role:
+                # Bowler also batted at least 6 balls: bowling stays primary (overall reflects bowling)
+                bat_w, bowl_w, field_w = 0.20, 0.65, 0.15
+            else:
+                bat_w, bowl_w, field_w = ROLE_WEIGHTS.get(
+                    role, ROLE_WEIGHTS[PlayerRole.BATTER]
+                )
         else:
             # Get weights based on role
             bat_w, bowl_w, field_w = ROLE_WEIGHTS.get(
@@ -240,7 +241,6 @@ def _merge_team_ratings(
             )
 
         # If bowler batted less than 6 balls, set batting weight to 0
-        is_bowler_role = role in (PlayerRole.BOWLER, PlayerRole.BOWLING_ALL_ROUNDER)
         if is_bowler_role and did_bat and bat_balls < 6:
             # Bowler faced less than 6 balls - batting weight should be 0
             # Redistribute batting weight proportionally to bowling and fielding

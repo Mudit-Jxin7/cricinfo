@@ -66,7 +66,7 @@ These are combined using role-based weights:
 **Special Cases:**
 - **Bowlers who face < 6 balls**: Batting weight set to 0, redistributed to bowling and fielding
 - **All-rounders**: Keep their role-based weights (no redistribution even if they bat/bowl significantly)
-- **Pure batters/bowlers who cross over**: If a batter bowls ≥6 balls or a bowler bats ≥6 balls, weights redistribute to 75% batting, 15% bowling, 10% fielding
+- **Cross-over weights**: If a batter bowls ≥6 balls, weights are 75% batting, 15% bowling, 10% fielding. If a bowler bats ≥6 balls, bowling stays primary: 20% batting, 65% bowling, 15% fielding (so a bowler’s overall rating stays bowling-driven).
 
 **MVP Selection:**
 - Highest overall rating wins
