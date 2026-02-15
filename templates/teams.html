@@ -6,6 +6,12 @@
 <p class="page-subtitle">All teams with their results and average player ratings.</p>
 
 {% if teams %}
+<div class="sort-filter">
+    <span class="sort-label">Sort by:</span>
+    <a href="{{ url_for('teams_page', sort='overall') }}" class="sort-pill {{ 'active' if sort_by == 'overall' else '' }}">Overall</a>
+    <a href="{{ url_for('teams_page', sort='batting') }}" class="sort-pill {{ 'active' if sort_by == 'batting' else '' }}">Batting</a>
+    <a href="{{ url_for('teams_page', sort='bowling') }}" class="sort-pill {{ 'active' if sort_by == 'bowling' else '' }}">Bowling</a>
+</div>
 <div class="teams-grid">
     {% for t in teams %}
     <a href="/team/{{ t.team }}" class="match-card-link">

@@ -1848,6 +1848,40 @@ body {
 }
 
 /* ===== Teams ===== */
+.sort-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.sort-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+.sort-pill {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.sort-pill:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+.sort-pill.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 .teams-grid {
     display: grid;
     gap: 10px;

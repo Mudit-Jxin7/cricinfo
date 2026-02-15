@@ -200,8 +200,13 @@ def leaderboard():
 @app.route("/teams")
 def teams_page():
     """Show all teams with win/loss record and avg rating."""
+    sort_by = request.args.get("sort", "overall")
+    if sort_by not in ("overall", "batting", "bowling"):
+        sort_by = "overall"
     teams = db.get_all_teams()
-    return render_template("teams.html", teams=teams)
+    key = "avg_rating" if sort_by == "overall" else ("avg_bat" if sort_by == "batting" else "avg_bowl")
+    teams.sort(key=lambda t: (t.get(key) or 0), reverse=True)
+    return render_template("teams.html", teams=teams, sort_by=sort_by)
 
 
 @app.route("/team/<name>")
