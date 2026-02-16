@@ -251,19 +251,21 @@ def _merge_team_ratings(
                 field_w = field_w + (bat_w * field_w / total_w)
             bat_w = 0.0
 
-        # If player didn't bat or bowl, adjust weights
+        # Overall = weighted average of components that apply. Never use a single
+        # component (e.g. field_rating) alone when the player batted or bowled.
         if not did_bat and not did_bowl:
-            # Only fielding matters
+            # Only fielding applies (e.g. fielder who didn't bat or bowl)
             overall = field_rating
         elif not did_bat:
-            # Redistribute batting weight
+            # Did not bat: use bowling + fielding only (redistribute batting weight)
             total_w = bowl_w + field_w
             if total_w > 0:
                 overall = (bowl_rating * bowl_w + field_rating * field_w) / total_w
             else:
                 overall = 5.0
         elif not did_bowl:
-            # Redistribute bowling weight
+            # Did not bowl: use batting + fielding only (redistribute bowling weight).
+            # Formula: weighted avg of bat and field so overall reflects both, not just fielding.
             total_w = bat_w + field_w
             if total_w > 0:
                 overall = (bat_rating * bat_w + field_rating * field_w) / total_w
