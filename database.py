@@ -374,7 +374,7 @@ def get_top_all_rounders(limit=10):
         FROM player_ratings
         WHERE did_bat = 1 AND did_bowl = 1
         GROUP BY LOWER(player_name)
-        HAVING COUNT(*) >= 1
+        HAVING SUM(runs) >= 30 AND SUM(wickets) >= 2
         ORDER BY avg_combined DESC
         LIMIT ?
     """, (limit,)).fetchall()
