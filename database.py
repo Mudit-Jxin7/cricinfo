@@ -329,7 +329,7 @@ def get_top_batsmen(limit=10):
         FROM player_ratings
         WHERE did_bat = 1
         GROUP BY LOWER(player_name)
-        HAVING SUM(runs) >= 50
+        HAVING SUM(runs) >= 75
         ORDER BY avg_rating DESC
         LIMIT ?
     """, (limit,)).fetchall()
@@ -351,7 +351,7 @@ def get_top_bowlers(limit=10):
         FROM player_ratings
         WHERE did_bowl = 1
         GROUP BY LOWER(player_name)
-        HAVING COUNT(*) >= 1
+        HAVING SUM(wickets) >= 3
         ORDER BY avg_rating DESC
         LIMIT ?
     """, (limit,)).fetchall()
