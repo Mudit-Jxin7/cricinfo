@@ -96,6 +96,25 @@ def player_detail(name):
     total_wickets = sum(h.get("wickets", 0) or 0 for h in history)
     mvp_count = sum(1 for h in history if h.get("is_mvp"))
 
+    # Batting stats (for batters)
+    total_balls = sum(h.get("balls", 0) or 0 for h in history)
+    dismissals = sum(
+        1 for h in history
+        if h.get("did_bat") and (h.get("dismissal") or "").lower() not in ("not_out", "did_not_bat", "")
+    )
+    batting_avg = round(total_runs / dismissals, 1) if dismissals > 0 else None
+    batting_sr = round((total_runs / total_balls) * 100, 1) if total_balls > 0 else None
+
+    # Bowling stats (for bowlers)
+    total_runs_conceded = sum(h.get("runs_conceded", 0) or 0 for h in history)
+    total_overs_bowled = sum(h.get("overs_bowled", 0) or 0 for h in history)
+    full_overs = int(total_overs_bowled)
+    part_balls = round((total_overs_bowled - full_overs) * 10)
+    total_balls_bowled = full_overs * 6 + part_balls
+    bowling_avg = round(total_runs_conceded / total_wickets, 1) if total_wickets > 0 else None
+    bowling_sr = round(total_balls_bowled / total_wickets, 1) if total_wickets > 0 else None
+    economy = round(total_runs_conceded / (total_balls_bowled / 6), 2) if total_balls_bowled > 0 else None
+
     stats = {
         "matches": len(history),
         "avg_overall": avg_overall,
@@ -105,6 +124,11 @@ def player_detail(name):
         "total_runs": total_runs,
         "total_wickets": total_wickets,
         "mvp_count": mvp_count,
+        "batting_avg": batting_avg,
+        "batting_sr": batting_sr,
+        "bowling_avg": bowling_avg,
+        "bowling_sr": bowling_sr,
+        "economy": economy,
     }
 
     awards = db.get_player_awards(name)

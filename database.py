@@ -334,7 +334,12 @@ def get_top_batsmen(limit=10):
         LIMIT ?
     """, (limit,)).fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    result = [dict(r) for r in rows]
+    for d in result:
+        total_balls = d.get("total_balls") or 0
+        total_runs = d.get("total_runs") or 0
+        d["strike_rate"] = round((total_runs / total_balls) * 100, 1) if total_balls > 0 else 0
+    return result
 
 
 def get_top_bowlers(limit=10):
@@ -356,7 +361,17 @@ def get_top_bowlers(limit=10):
         LIMIT ?
     """, (limit,)).fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    result = [dict(r) for r in rows]
+    for d in result:
+        total_wickets = d.get("total_wickets") or 0
+        total_overs = d.get("total_overs") or 0
+        full_overs = int(total_overs)
+        part = round((total_overs - full_overs) * 10)
+        total_balls_bowled = full_overs * 6 + part
+        d["strike_rate"] = round(total_balls_bowled / total_wickets, 1) if total_wickets > 0 else 0
+        total_runs_conceded = d.get("total_runs_conceded") or 0
+        d["economy"] = round(total_runs_conceded / (total_balls_bowled / 6), 2) if total_balls_bowled > 0 else 0
+    return result
 
 
 def get_top_all_rounders(limit=10):

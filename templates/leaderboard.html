@@ -20,6 +20,7 @@
             <span class="lb-player">Player</span>
             <span class="lb-stat">Matches</span>
             <span class="lb-stat">Avg BAT</span>
+            <span class="lb-stat">SR</span>
             <span class="lb-stat hide-mobile">Runs</span>
             <span class="lb-stat hide-mobile">4s</span>
             <span class="lb-stat hide-mobile">6s</span>
@@ -37,6 +38,7 @@
             </span>
             <span class="lb-stat">{{ p.matches }}</span>
             <span class="lb-stat lb-highlight">{{ p.avg_rating }}</span>
+            <span class="lb-stat">{{ p.strike_rate }}</span>
             <span class="lb-stat hide-mobile">{{ p.total_runs }}</span>
             <span class="lb-stat hide-mobile">{{ p.total_fours }}</span>
             <span class="lb-stat hide-mobile">{{ p.total_sixes }}</span>
@@ -58,6 +60,8 @@
             <span class="lb-player">Player</span>
             <span class="lb-stat">Matches</span>
             <span class="lb-stat">Avg BOWL</span>
+            <span class="lb-stat">SR</span>
+            <span class="lb-stat">Econ</span>
             <span class="lb-stat hide-mobile">Wickets</span>
             <span class="lb-stat hide-mobile">Overs</span>
             <span class="lb-stat">Best</span>
@@ -74,6 +78,8 @@
             </span>
             <span class="lb-stat">{{ p.matches }}</span>
             <span class="lb-stat lb-highlight">{{ p.avg_rating }}</span>
+            <span class="lb-stat">{{ p.strike_rate }}</span>
+            <span class="lb-stat">{{ p.economy }}</span>
             <span class="lb-stat hide-mobile">{{ p.total_wickets }}</span>
             <span class="lb-stat hide-mobile">{{ p.total_overs }}</span>
             <span class="lb-stat">{{ p.best_rating }}</span>

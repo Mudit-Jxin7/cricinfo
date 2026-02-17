@@ -56,6 +56,30 @@
             <div class="stat-big">{{ stats.total_wickets }}</div>
             <div class="stat-label">Total Wickets</div>
         </div>
+        {% if stats.batting_avg is not none or stats.batting_sr is not none %}
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.batting_avg if stats.batting_avg is not none else '-' }}</div>
+            <div class="stat-label">Batting Avg</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.batting_sr if stats.batting_sr is not none else '-' }}</div>
+            <div class="stat-label">Strike Rate</div>
+        </div>
+        {% endif %}
+        {% if stats.bowling_avg is not none or stats.bowling_sr is not none or stats.economy is not none %}
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.bowling_avg if stats.bowling_avg is not none else '-' }}</div>
+            <div class="stat-label">Bowling Avg</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.bowling_sr if stats.bowling_sr is not none else '-' }}</div>
+            <div class="stat-label">Bowl SR</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-big">{{ stats.economy if stats.economy is not none else '-' }}</div>
+            <div class="stat-label">Economy</div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
