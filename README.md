@@ -67,6 +67,7 @@ These are combined using role-based weights:
 - **Bowlers who face < 6 balls**: Batting weight set to 0, redistributed to bowling and fielding
 - **All-rounders**: Keep their role-based weights (no redistribution even if they bat/bowl significantly)
 - **Cross-over weights**: If a batter bowls ≥6 balls, weights are 75% batting, 15% bowling, 10% fielding. If a bowler bats ≥6 balls, bowling stays primary: 20% batting, 65% bowling, 15% fielding (so a bowler’s overall rating stays bowling-driven).
+- **Did not bat / did not bowl**: Overall is always a weighted average of the components that apply (e.g. if a player didn’t bowl, overall = weighted average of batting + fielding only), never a single component alone.
 
 **MVP Selection:**
 - Highest overall rating wins
@@ -75,9 +76,9 @@ These are combined using role-based weights:
 ## Features
 
 - **Match Management**: Save matches to database, view match history, player statistics
-- **Player Profiles**: Track individual player performance over time with form graphs
-- **Team Statistics**: View team performance, win/loss records, and team comparisons
-- **Leaderboards**: Top performers by batting, bowling, and all-round performance
+- **Player Profiles**: Track individual player performance over time with form graphs, **batting average** and **strike rate** for batters, **bowling average**, **bowling strike rate**, and **economy** for bowlers
+- **Team Statistics**: View team performance, win/loss records, and team comparisons; **sort teams** by overall, batting, or bowling rating
+- **Leaderboards**: Top 10 by batting (min. 75 runs), bowling (min. 3 wickets), and all-round (min. 75 runs and 3 wickets); batsmen table shows **strike rate**, bowlers show **SR** (balls per wicket) and **economy**
 - **Player Comparison**: Head-to-head comparison between any two players
 - **Default Settings**: Dismissal type defaults to "caught" for faster data entry
 
