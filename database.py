@@ -397,6 +397,97 @@ def get_top_all_rounders(limit=10):
     return [dict(r) for r in rows]
 
 
+def get_best_team_of_tournament():
+    """Best team of tournament: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers."""
+    conn = get_db()
+    result = {}
+
+    # 5 batsmen (role = batter, min 100 runs)
+    rows = conn.execute("""
+        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
+               COUNT(*) as matches, ROUND(AVG(batting_rating), 2) as avg_rating,
+               SUM(runs) as total_runs, SUM(balls) as total_balls,
+               MAX(overall_rating) as best_rating
+        FROM player_ratings
+        WHERE role = 'batter' AND did_bat = 1
+        GROUP BY LOWER(player_name)
+        HAVING SUM(runs) >= 100
+        ORDER BY AVG(batting_rating) DESC
+        LIMIT 5
+    """).fetchall()
+    result["batsmen"] = [dict(r) for r in rows]
+
+    # 1 wicket-keeper (role = wicket_keeper, min 100 runs)
+    rows = conn.execute("""
+        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
+               COUNT(*) as matches, ROUND(AVG(overall_rating), 2) as avg_rating,
+               SUM(runs) as total_runs, SUM(wickets) as total_wickets,
+               MAX(overall_rating) as best_rating
+        FROM player_ratings
+        WHERE role = 'wicket_keeper' AND did_bat = 1
+        GROUP BY LOWER(player_name)
+        HAVING SUM(runs) >= 100
+        ORDER BY AVG(overall_rating) DESC
+        LIMIT 1
+    """).fetchall()
+    result["wicket_keeper"] = [dict(r) for r in rows]
+
+    # 2 batting all-rounders (role = batting_all_rounder, 50 runs, 2 wkts)
+    rows = conn.execute("""
+        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
+               COUNT(*) as matches,
+               ROUND(AVG(batting_rating), 2) as avg_bat,
+               ROUND(AVG(bowling_rating), 2) as avg_bowl,
+               ROUND((AVG(batting_rating) + AVG(bowling_rating)) / 2, 2) as avg_rating,
+               SUM(runs) as total_runs, SUM(wickets) as total_wickets,
+               MAX(overall_rating) as best_rating
+        FROM player_ratings
+        WHERE role = 'batting_all_rounder' AND did_bat = 1 AND did_bowl = 1
+        GROUP BY LOWER(player_name)
+        HAVING SUM(runs) >= 50 AND SUM(wickets) >= 2
+        ORDER BY (AVG(batting_rating) + AVG(bowling_rating)) / 2 DESC
+        LIMIT 2
+    """).fetchall()
+    result["bat_all_rounders"] = [dict(r) for r in rows]
+
+    # 1 bowling all-rounder (role = bowling_all_rounder, 50 runs, 2 wkts)
+    rows = conn.execute("""
+        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
+               COUNT(*) as matches,
+               ROUND(AVG(batting_rating), 2) as avg_bat,
+               ROUND(AVG(bowling_rating), 2) as avg_bowl,
+               ROUND((AVG(batting_rating) + AVG(bowling_rating)) / 2, 2) as avg_rating,
+               SUM(runs) as total_runs, SUM(wickets) as total_wickets,
+               MAX(overall_rating) as best_rating
+        FROM player_ratings
+        WHERE role = 'bowling_all_rounder' AND did_bat = 1 AND did_bowl = 1
+        GROUP BY LOWER(player_name)
+        HAVING SUM(runs) >= 50 AND SUM(wickets) >= 2
+        ORDER BY (AVG(batting_rating) + AVG(bowling_rating)) / 2 DESC
+        LIMIT 1
+    """).fetchall()
+    result["bowl_all_rounder"] = [dict(r) for r in rows]
+
+    # 3 bowlers (role = bowler, min 4 wickets)
+    rows = conn.execute("""
+        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
+               COUNT(*) as matches, ROUND(AVG(bowling_rating), 2) as avg_rating,
+               SUM(wickets) as total_wickets, SUM(overs_bowled) as total_overs,
+               SUM(runs_conceded) as total_runs_conceded,
+               MAX(overall_rating) as best_rating
+        FROM player_ratings
+        WHERE role = 'bowler' AND did_bowl = 1
+        GROUP BY LOWER(player_name)
+        HAVING SUM(wickets) >= 4
+        ORDER BY AVG(bowling_rating) DESC
+        LIMIT 3
+    """).fetchall()
+    result["bowlers"] = [dict(r) for r in rows]
+
+    conn.close()
+    return result
+
+
 def get_player_comparison(name1: str, name2: str):
     """Get aggregated stats for two players for head-to-head comparison."""
     conn = get_db()

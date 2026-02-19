@@ -219,6 +219,13 @@ def leaderboard():
                            batsmen=batsmen, bowlers=bowlers, all_rounders=all_rounders)
 
 
+@app.route("/best-team")
+def best_team():
+    """Best team of tournament: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers."""
+    team = db.get_best_team_of_tournament()
+    return render_template("best_team.html", team=team)
+
+
 # ───── Teams ─────
 
 @app.route("/teams")

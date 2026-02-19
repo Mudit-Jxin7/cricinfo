@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Best Team of Tournament - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Best Team of Tournament</h1>
+<p class="page-subtitle">Best XI so far: 5 batsmen, 1 wicket-keeper, 2 batting all-rounders, 1 bowling all-rounder, 3 bowlers.</p>
+
+<div class="best-team-grid">
+    <!-- 5 Batsmen -->
+    <div class="best-team-section">
+        <h2 class="best-team-section-title">Batsmen (5)</h2>
+        {% if team.batsmen %}
+        <div class="best-team-cards">
+            {% for p in team.batsmen %}
+            <a href="/player/{{ p.player_name }}" class="best-team-card">
+                <div class="rating-circle {{ _rating_color(p.avg_rating) }} best-team-rating">{{ p.avg_rating }}</div>
+                <div class="best-team-card-name">{{ p.player_name }}</div>
+                <div class="best-team-card-team">{{ p.teams }}</div>
+                <div class="best-team-card-stats">{{ p.total_runs }} runs &middot; {{ p.matches }} mat</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="best-team-empty">No batsmen with 100+ runs yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- 1 Wicket-keeper -->
+    <div class="best-team-section">
+        <h2 class="best-team-section-title">Wicket-keeper (1)</h2>
+        {% if team.wicket_keeper %}
+        <div class="best-team-cards">
+            {% for p in team.wicket_keeper %}
+            <a href="/player/{{ p.player_name }}" class="best-team-card">
+                <div class="rating-circle {{ _rating_color(p.avg_rating) }} best-team-rating">{{ p.avg_rating }}</div>
+                <div class="best-team-card-name">{{ p.player_name }}</div>
+                <div class="best-team-card-team">{{ p.teams }}</div>
+                <div class="best-team-card-stats">{{ p.total_runs }} runs &middot; {{ p.matches }} mat</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="best-team-empty">No wicket-keeper with 100+ runs yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- 2 Batting all-rounders -->
+    <div class="best-team-section">
+        <h2 class="best-team-section-title">Batting all-rounders (2)</h2>
+        {% if team.bat_all_rounders %}
+        <div class="best-team-cards">
+            {% for p in team.bat_all_rounders %}
+            <a href="/player/{{ p.player_name }}" class="best-team-card">
+                <div class="rating-circle {{ _rating_color(p.avg_rating) }} best-team-rating">{{ p.avg_rating }}</div>
+                <div class="best-team-card-name">{{ p.player_name }}</div>
+                <div class="best-team-card-team">{{ p.teams }}</div>
+                <div class="best-team-card-stats">{{ p.total_runs }} runs, {{ p.total_wickets }} wkts &middot; {{ p.matches }} mat</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="best-team-empty">No batting all-rounders with 50+ runs & 2+ wkts yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- 1 Bowling all-rounder -->
+    <div class="best-team-section">
+        <h2 class="best-team-section-title">Bowling all-rounder (1)</h2>
+        {% if team.bowl_all_rounder %}
+        <div class="best-team-cards">
+            {% for p in team.bowl_all_rounder %}
+            <a href="/player/{{ p.player_name }}" class="best-team-card">
+                <div class="rating-circle {{ _rating_color(p.avg_rating) }} best-team-rating">{{ p.avg_rating }}</div>
+                <div class="best-team-card-name">{{ p.player_name }}</div>
+                <div class="best-team-card-team">{{ p.teams }}</div>
+                <div class="best-team-card-stats">{{ p.total_runs }} runs, {{ p.total_wickets }} wkts &middot; {{ p.matches }} mat</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="best-team-empty">No bowling all-rounder with 50+ runs & 2+ wkts yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- 3 Bowlers -->
+    <div class="best-team-section">
+        <h2 class="best-team-section-title">Bowlers (3)</h2>
+        {% if team.bowlers %}
+        <div class="best-team-cards">
+            {% for p in team.bowlers %}
+            <a href="/player/{{ p.player_name }}" class="best-team-card">
+                <div class="rating-circle {{ _rating_color(p.avg_rating) }} best-team-rating">{{ p.avg_rating }}</div>
+                <div class="best-team-card-name">{{ p.player_name }}</div>
+                <div class="best-team-card-team">{{ p.teams }}</div>
+                <div class="best-team-card-stats">{{ p.total_wickets }} wkts &middot; {{ p.matches }} mat</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="best-team-empty">No bowlers with 4+ wickets yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
