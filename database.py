@@ -271,7 +271,9 @@ def get_player_awards(player_name: str):
         awards.append({"icon": "six", "label": "Six Machine", "count": sixes_total,
                         "color": "#7b1fa2", "desc": "Total sixes hit"})
     total_matches = len(rows)
-    if total_matches > 0 and high_ratings >= total_matches / 2:
+    # Mr. Consistent: at least half (rounded up) of matches with 7+ (e.g. 5 games → 3, 6 games → 3)
+    min_consistent = (total_matches + 1) // 2 if total_matches > 0 else 0
+    if total_matches > 0 and high_ratings >= min_consistent:
         awards.append({"icon": "consistent", "label": "Mr. Consistent", "count": high_ratings,
                         "color": "#00897b", "desc": "7.0+ (6.7+ for all-rounders) in at least half of matches"})
     if golden_ducks > 0:
