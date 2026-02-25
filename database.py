@@ -201,7 +201,7 @@ def get_player_history(player_name: str):
         ORDER BY m.id ASC
     """, (player_name,)).fetchall()
     conn.close()
-    return [dwict(r) for r in rows]
+    return [dict(r) for r in rows]
 
 
 def get_player_awards(player_name: str):
