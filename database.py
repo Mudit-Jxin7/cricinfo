@@ -201,7 +201,7 @@ def get_player_history(player_name: str):
         ORDER BY m.id ASC
     """, (player_name,)).fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    return [dwict(r) for r in rows]
 
 
 def get_player_awards(player_name: str):
@@ -246,7 +246,10 @@ def get_player_awards(player_name: str):
             three_wkt += 1
         if runs == 0 and balls > 0 and dismissal and dismissal != "not_out" and dismissal != "did_not_bat":
             golden_ducks += 1
-        if r.get("overall_rating", 0) >= 7.0:
+        role = (r.get("role") or "").lower()
+        is_all_rounder = role in ("batting_all_rounder", "bowling_all_rounder")
+        threshold = 6.7 if is_all_rounder else 7.0
+        if (r.get("overall_rating", 0) or 0) >= threshold:
             high_ratings += 1
 
     if mvp_count > 0:
@@ -268,9 +271,9 @@ def get_player_awards(player_name: str):
         awards.append({"icon": "six", "label": "Six Machine", "count": sixes_total,
                         "color": "#7b1fa2", "desc": "Total sixes hit"})
     total_matches = len(rows)
-    if total_matches > 0 and high_ratings >= total_matches / 2:
+    if total_matches > 0 and high_ratings > total_matches / 2:
         awards.append({"icon": "consistent", "label": "Mr. Consistent", "count": high_ratings,
-                        "color": "#00897b", "desc": "7.0+ rating in more than half of matches"})
+                        "color": "#00897b", "desc": "7.0+ (6.7+ for all-rounders) in more than half of matches"})
     if golden_ducks > 0:
         awards.append({"icon": "duck", "label": "Golden Ducks", "count": golden_ducks,
                         "color": "#795548", "desc": "Out for 0 runs"})
