@@ -267,9 +267,10 @@ def get_player_awards(player_name: str):
     if sixes_total >= 10:
         awards.append({"icon": "six", "label": "Six Machine", "count": sixes_total,
                         "color": "#7b1fa2", "desc": "Total sixes hit"})
-    if high_ratings >= 3:
+    total_matches = len(rows)
+    if total_matches > 0 and high_ratings >= total_matches / 2:
         awards.append({"icon": "consistent", "label": "Mr. Consistent", "count": high_ratings,
-                        "color": "#00897b", "desc": "Matches with 7.0+ rating"})
+                        "color": "#00897b", "desc": "7.0+ rating in more than half of matches"})
     if golden_ducks > 0:
         awards.append({"icon": "duck", "label": "Golden Ducks", "count": golden_ducks,
                         "color": "#795548", "desc": "Out for 0 runs"})
