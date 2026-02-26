@@ -214,7 +214,7 @@ def leaderboard():
     """Top 10 batsmen, bowlers, and all-rounders."""
     batsmen = db.get_top_batsmen(10)
     bowlers = db.get_top_bowlers(10)
-    all_rounders = db.get_top_all_rounders(10)
+    all_rounders = db.get_top_all_rounders(5)
     return render_template("leaderboard.html",
                            batsmen=batsmen, bowlers=bowlers, all_rounders=all_rounders)
 
