@@ -381,26 +381,42 @@ def get_top_bowlers(limit=10):
 
 
 def get_top_all_rounders(limit=10):
+    """Top all-rounders: combined = 60% major + 40% minor (bat AR: 60% bat, 40% bowl; bowl AR: 60% bowl, 40% bat)."""
     conn = get_db()
     rows = conn.execute("""
         SELECT player_name,
                COUNT(*) as matches,
                ROUND(AVG(batting_rating), 2) as avg_bat,
                ROUND(AVG(bowling_rating), 2) as avg_bowl,
-               ROUND((AVG(batting_rating) + AVG(bowling_rating)) / 2, 2) as avg_combined,
+               SUM(CASE WHEN role = 'batting_all_rounder' THEN 1 ELSE 0 END) as bat_ar_count,
+               SUM(CASE WHEN role = 'bowling_all_rounder' THEN 1 ELSE 0 END) as bowl_ar_count,
                SUM(runs) as total_runs,
                SUM(wickets) as total_wickets,
                MAX(overall_rating) as best_rating,
                GROUP_CONCAT(DISTINCT team) as teams
         FROM player_ratings
         WHERE did_bat = 1 AND did_bowl = 1
+          AND role IN ('batting_all_rounder', 'bowling_all_rounder')
         GROUP BY LOWER(player_name)
         HAVING ((SUM(runs) >= 50 AND SUM(wickets) >= 3) OR (SUM(runs) >= 75 AND SUM(wickets) >= 2)) AND COUNT(*) >= 4
-        ORDER BY avg_combined DESC
-        LIMIT ?
-    """, (limit,)).fetchall()
+    """).fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        d = dict(r)
+        avg_bat = d.get("avg_bat") or 0
+        avg_bowl = d.get("avg_bowl") or 0
+        bat_ar_count = d.get("bat_ar_count") or 0
+        bowl_ar_count = d.get("bowl_ar_count") or 0
+        is_bat_ar = bat_ar_count >= bowl_ar_count
+        if is_bat_ar:
+            combined = round(0.6 * avg_bat + 0.4 * avg_bowl, 2)
+        else:
+            combined = round(0.6 * avg_bowl + 0.4 * avg_bat, 2)
+        d["avg_combined"] = combined
+        result.append(d)
+    result.sort(key=lambda x: x["avg_combined"], reverse=True)
+    return result[:limit]
 
 
 def get_best_team_of_tournament():
