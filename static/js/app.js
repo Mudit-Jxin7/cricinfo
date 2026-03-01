@@ -76,7 +76,6 @@ function updateTeamLabels() {
         <option value="">-- Select --</option>
         <option value="${t1}" ${currentVal === t1 ? 'selected' : ''}>${t1}</option>
         <option value="${t2}" ${currentVal === t2 ? 'selected' : ''}>${t2}</option>
-        <option value="tie">Tie</option>
     `;
 }
 
