@@ -335,7 +335,7 @@ def get_top_batsmen(limit=10):
         FROM player_ratings
         WHERE did_bat = 1
         GROUP BY LOWER(player_name)
-        HAVING SUM(runs) >= 125 AND COUNT(*) >= 4
+        HAVING SUM(runs) >= 150 AND COUNT(*) >= 4
         ORDER BY avg_rating DESC
         LIMIT ?
     """, (limit,)).fetchall()
@@ -362,7 +362,7 @@ def get_top_bowlers(limit=10):
         FROM player_ratings
         WHERE did_bowl = 1
         GROUP BY LOWER(player_name)
-        HAVING SUM(wickets) >= 5 AND COUNT(*) >= 4
+        HAVING SUM(wickets) >= 7 AND COUNT(*) >= 4
         ORDER BY avg_rating DESC
         LIMIT ?
     """, (limit,)).fetchall()
@@ -424,7 +424,7 @@ def get_best_team_of_tournament():
     conn = get_db()
     result = {}
 
-    # 5 batsmen (role = batter, min 125 runs)
+    # 5 batsmen (role = batter, min 150 runs)
     rows = conn.execute("""
         SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
                COUNT(*) as matches, ROUND(AVG(batting_rating), 2) as avg_rating,
@@ -433,13 +433,13 @@ def get_best_team_of_tournament():
         FROM player_ratings
         WHERE role = 'batter' AND did_bat = 1
         GROUP BY LOWER(player_name)
-        HAVING SUM(runs) >= 125 AND COUNT(*) >= 4
+        HAVING SUM(runs) >= 150 AND COUNT(*) >= 4
         ORDER BY AVG(batting_rating) DESC
         LIMIT 5
     """).fetchall()
     result["batsmen"] = [dict(r) for r in rows]
 
-    # 1 wicket-keeper (role = wicket_keeper, min 125 runs)
+    # 1 wicket-keeper (role = wicket_keeper, min 150 runs)
     rows = conn.execute("""
         SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
                COUNT(*) as matches, ROUND(AVG(overall_rating), 2) as avg_rating,
@@ -448,7 +448,7 @@ def get_best_team_of_tournament():
         FROM player_ratings
         WHERE role = 'wicket_keeper' AND did_bat = 1
         GROUP BY LOWER(player_name)
-        HAVING SUM(runs) >= 125 AND COUNT(*) >= 4
+        HAVING SUM(runs) >= 150 AND COUNT(*) >= 4
         ORDER BY AVG(overall_rating) DESC
         LIMIT 1
     """).fetchall()
@@ -500,7 +500,7 @@ def get_best_team_of_tournament():
         FROM player_ratings
         WHERE role = 'bowler' AND did_bowl = 1
         GROUP BY LOWER(player_name)
-        HAVING SUM(wickets) >= 5 AND COUNT(*) >= 4
+        HAVING SUM(wickets) >= 7 AND COUNT(*) >= 4
         ORDER BY AVG(bowling_rating) DESC
         LIMIT 3
     """).fetchall()
