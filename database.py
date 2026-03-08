@@ -136,6 +136,35 @@ def get_event(event_id: int):
     return dict(row) if row else None
 
 
+def get_event_by_name(name: str):
+    """Get event by name (case-insensitive). Returns dict or None."""
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM events WHERE LOWER(TRIM(name)) = LOWER(TRIM(?))",
+        (name,),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_or_create_event(name: str) -> int:
+    """Get event id by name, or create the event if it doesn't exist. Returns event_id."""
+    existing = get_event_by_name(name)
+    if existing:
+        return existing["id"]
+    return create_event(name)
+
+
+def update_match_event(match_id: int, event_id: int) -> bool:
+    """Update a match's event. Returns True if a row was updated."""
+    conn = get_db()
+    cur = conn.execute("UPDATE matches SET event_id = ? WHERE id = ?", (event_id, match_id))
+    updated = cur.rowcount
+    conn.commit()
+    conn.close()
+    return updated > 0
+
+
 def save_match(match_info: dict, team1_players: list, team2_players: list,
                batting_data: dict, event_id: int = 1) -> int:
     """Save a match and all player ratings. Returns match_id."""
