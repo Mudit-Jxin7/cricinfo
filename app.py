@@ -66,7 +66,7 @@ def events_page():
         eid = db.create_event(name)
         if request.is_json:
             return jsonify({"success": True, "event_id": eid, "name": name})
-        return redirect(url_for("events_page"))
+        return redirect(url_for("events_page", created=1))
     events = db.get_all_events()
     return render_template("events.html", events=events)
 

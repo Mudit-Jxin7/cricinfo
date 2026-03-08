@@ -160,14 +160,98 @@ body {
 }
 .event-filter-inline { margin-top: 10px; }
 
-.events-actions { margin-bottom: 24px; }
+.events-success-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    background: rgba(46, 125, 50, 0.2);
+    border: 1px solid var(--rating-great);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+.events-success-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--rating-great);
+    color: #fff;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.events-create-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 28px;
+}
+.events-create-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+.events-create-hint {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+}
 .events-create-form {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    gap: 14px;
+    align-items: flex-end;
     flex-wrap: wrap;
 }
-.events-name-input { width: 220px; }
+.events-create-field {
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+}
+.events-create-field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.events-name-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.events-name-input::placeholder {
+    color: var(--text-muted);
+}
+.events-name-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+.events-create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    white-space: nowrap;
+}
+.events-create-btn .btn-icon {
+    font-size: 1.2rem;
+    font-weight: 300;
+    line-height: 1;
+}
 .events-list {
     list-style: none;
 }

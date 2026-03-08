@@ -5,10 +5,27 @@
 <h1 class="page-title">Events</h1>
 <p class="page-subtitle">Create and manage events. Matches, leaderboards, and best team can be filtered by event.</p>
 
-<div class="events-actions">
-    <form method="post" action="{{ url_for('events_page') }}" class="events-create-form">
-        <input type="text" name="name" placeholder="e.g. World Cup 2026" required class="form-control events-name-input">
-        <button type="submit" class="btn btn-primary">Create Event</button>
+{% if request.args.get('created') %}
+<div class="events-success-banner" role="alert">
+    <span class="events-success-icon">✓</span>
+    <span>Event created. It will appear in the list below and in the event dropdown when adding matches.</span>
+</div>
+{% endif %}
+
+<div class="events-create-card">
+    <h2 class="events-create-title">Add new event</h2>
+    <p class="events-create-hint">Give your tournament or series a name (e.g. World Cup 2026, IPL 2027).</p>
+    <form method="post" action="{{ url_for('events_page') }}" class="events-create-form" id="eventsCreateForm">
+        <div class="events-create-field">
+            <label for="event_name">Event name</label>
+            <input type="text" id="event_name" name="name" placeholder="e.g. World Cup 2026" required
+                   minlength="2" maxlength="120" autocomplete="off"
+                   class="events-name-input">
+        </div>
+        <button type="submit" class="btn btn-primary events-create-btn">
+            <span class="btn-icon">+</span>
+            Create Event
+        </button>
     </form>
 </div>
 
