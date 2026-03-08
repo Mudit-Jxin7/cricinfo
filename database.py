@@ -19,8 +19,15 @@ def init_db():
     """Create tables if they don't exist."""
     conn = get_db()
     conn.executescript("""
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS matches (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id INTEGER NOT NULL DEFAULT 1,
             team1 TEXT NOT NULL,
             team2 TEXT NOT NULL,
             team1_score TEXT NOT NULL,
@@ -29,7 +36,8 @@ def init_db():
             venue TEXT NOT NULL DEFAULT '',
             mvp_name TEXT NOT NULL DEFAULT '',
             mvp_rating REAL NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (event_id) REFERENCES events(id)
         );
 
         CREATE TABLE IF NOT EXISTS player_ratings (
@@ -77,28 +85,83 @@ def init_db():
         conn.execute("ALTER TABLE player_ratings ADD COLUMN dismissal TEXT DEFAULT ''")
     except sqlite3.OperationalError:
         pass
+    # Events: create table if missing (migration)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+    try:
+        conn.execute("ALTER TABLE matches ADD COLUMN event_id INTEGER NOT NULL DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass
+    # Ensure default event exists
+    if conn.execute("SELECT COUNT(*) FROM events").fetchone()[0] == 0:
+        conn.execute(
+            "INSERT INTO events (name, created_at) VALUES (?, ?)",
+            ("World Cup 2026", datetime.now().isoformat()),
+        )
     conn.commit()
     conn.close()
 
 
+def create_event(name: str) -> int:
+    """Create a new event. Returns event_id."""
+    conn = get_db()
+    cur = conn.execute(
+        "INSERT INTO events (name, created_at) VALUES (?, ?)",
+        (name.strip(), datetime.now().isoformat()),
+    )
+    eid = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return eid
+
+
+def get_all_events():
+    """Return all events, oldest first (so default/World Cup is first)."""
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM events ORDER BY id ASC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_event(event_id: int):
+    """Get single event by id."""
+    conn = get_db()
+    row = conn.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def save_match(match_info: dict, team1_players: list, team2_players: list,
-               batting_data: dict) -> int:
+               batting_data: dict, event_id: int = 1) -> int:
     """Save a match and all player ratings. Returns match_id."""
     conn = get_db()
     cur = conn.cursor()
 
     all_players = team1_players + team2_players
 
-    # Determine MVP (highest overall rating)
-    mvp = max(all_players, key=lambda p: p["overall_rating"]) if all_players else None
+    # Determine MVP (highest overall rating; if tie, prefer winning team)
+    winner = match_info.get("winner", "")
+    if all_players:
+        max_rating = max(p["overall_rating"] for p in all_players)
+        candidates = [p for p in all_players if p["overall_rating"] == max_rating]
+        winning = [p for p in candidates if p["team"] == winner]
+        mvp = winning[0] if winning else candidates[0]
+    else:
+        mvp = None
     mvp_name = mvp["name"] if mvp else ""
     mvp_rating = mvp["overall_rating"] if mvp else 0
 
     cur.execute("""
-        INSERT INTO matches (team1, team2, team1_score, team2_score, winner, venue,
+        INSERT INTO matches (event_id, team1, team2, team1_score, team2_score, winner, venue,
                              mvp_name, mvp_rating, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
+        event_id,
         match_info["team1_name"],
         match_info["team2_name"],
         match_info["team1_score"],
@@ -168,17 +231,28 @@ def save_match(match_info: dict, team1_players: list, team2_players: list,
     return match_id
 
 
-def get_all_matches():
-    """Return all matches, newest first."""
+def get_all_matches(event_id=None):
+    """Return all matches, newest first. If event_id given, filter by event."""
     conn = get_db()
-    rows = conn.execute("SELECT * FROM matches ORDER BY id DESC").fetchall()
+    if event_id:
+        rows = conn.execute(
+            "SELECT m.*, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.event_id = ? ORDER BY m.id DESC",
+            (event_id,),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT m.*, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id ORDER BY m.id DESC"
+        ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
 def get_match(match_id: int):
     conn = get_db()
-    row = conn.execute("SELECT * FROM matches WHERE id = ?", (match_id,)).fetchone()
+    row = conn.execute(
+        "SELECT m.*, e.name as event_name FROM matches m LEFT JOIN events e ON m.event_id = e.id WHERE m.id = ?",
+        (match_id,),
+    ).fetchone()
     if not row:
         conn.close()
         return None, []
@@ -189,30 +263,67 @@ def get_match(match_id: int):
     return dict(row), [dict(p) for p in players]
 
 
-def get_player_history(player_name: str):
-    """Get all ratings for a player across matches."""
+def get_player_history(player_name: str, event_id=None):
+    """Get all ratings for a player across matches. If event_id given, filter to that event."""
+    conn = get_db()
+    if event_id:
+        rows = conn.execute("""
+            SELECT pr.*, m.team1, m.team2, m.team1_score, m.team2_score,
+                   m.winner, m.venue, m.created_at, m.mvp_name, m.event_id,
+                   e.name as event_name
+            FROM player_ratings pr
+            JOIN matches m ON pr.match_id = m.id
+            LEFT JOIN events e ON m.event_id = e.id
+            WHERE LOWER(pr.player_name) = LOWER(?) AND m.event_id = ?
+            ORDER BY m.id ASC
+        """, (player_name, event_id)).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT pr.*, m.team1, m.team2, m.team1_score, m.team2_score,
+                   m.winner, m.venue, m.created_at, m.mvp_name, m.event_id,
+                   e.name as event_name
+            FROM player_ratings pr
+            JOIN matches m ON pr.match_id = m.id
+            LEFT JOIN events e ON m.event_id = e.id
+            WHERE LOWER(pr.player_name) = LOWER(?)
+            ORDER BY m.id ASC
+        """, (player_name,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_player_events(player_name: str):
+    """List events in which this player has played (for event selector on profile)."""
     conn = get_db()
     rows = conn.execute("""
-        SELECT pr.*, m.team1, m.team2, m.team1_score, m.team2_score,
-               m.winner, m.venue, m.created_at, m.mvp_name
-        FROM player_ratings pr
-        JOIN matches m ON pr.match_id = m.id
+        SELECT DISTINCT e.id, e.name
+        FROM events e
+        JOIN matches m ON m.event_id = e.id
+        JOIN player_ratings pr ON pr.match_id = m.id
         WHERE LOWER(pr.player_name) = LOWER(?)
-        ORDER BY m.id ASC
+        ORDER BY e.id ASC
     """, (player_name,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def get_player_awards(player_name: str):
-    """Compute awards/badges for a player based on their history."""
+def get_player_awards(player_name: str, event_id=None):
+    """Compute awards/badges for a player based on their history. If event_id given, filter to that event."""
     conn = get_db()
-    rows = conn.execute("""
-        SELECT pr.*, m.mvp_name
-        FROM player_ratings pr
-        JOIN matches m ON pr.match_id = m.id
-        WHERE LOWER(pr.player_name) = LOWER(?)
-    """, (player_name,)).fetchall()
+    if event_id:
+        rows = conn.execute("""
+            SELECT pr.*, m.mvp_name
+            FROM player_ratings pr
+            JOIN matches m ON pr.match_id = m.id
+            WHERE LOWER(pr.player_name) = LOWER(?) AND m.event_id = ?
+        """, (player_name, event_id)).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT pr.*, m.mvp_name
+            FROM player_ratings pr
+            JOIN matches m ON pr.match_id = m.id
+            WHERE LOWER(pr.player_name) = LOWER(?)
+        """, (player_name,)).fetchall()
     conn.close()
 
     awards = []
@@ -320,25 +431,29 @@ def search_players(query: str):
     return [dict(r) for r in rows]
 
 
-def get_top_batsmen(limit=10):
+def get_top_batsmen(limit=10, event_id=None):
     conn = get_db()
-    rows = conn.execute("""
-        SELECT player_name,
+    event_clause = "AND m.event_id = ?" if event_id else ""
+    params = (event_id, limit) if event_id else (limit,)
+    sql = f"""
+        SELECT pr.player_name,
                COUNT(*) as matches,
-               ROUND(AVG(batting_rating), 2) as avg_rating,
-               SUM(runs) as total_runs,
-               SUM(balls) as total_balls,
-               SUM(fours) as total_fours,
-               SUM(sixes) as total_sixes,
-               MAX(overall_rating) as best_rating,
-               GROUP_CONCAT(DISTINCT team) as teams
-        FROM player_ratings
-        WHERE did_bat = 1
-        GROUP BY LOWER(player_name)
-        HAVING SUM(runs) >= 150 AND COUNT(*) >= 4
+               ROUND(AVG(pr.batting_rating), 2) as avg_rating,
+               SUM(pr.runs) as total_runs,
+               SUM(pr.balls) as total_balls,
+               SUM(pr.fours) as total_fours,
+               SUM(pr.sixes) as total_sixes,
+               MAX(pr.overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT pr.team) as teams
+        FROM player_ratings pr
+        JOIN matches m ON pr.match_id = m.id
+        WHERE pr.did_bat = 1 {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING SUM(pr.runs) >= 150 AND COUNT(*) >= 4
         ORDER BY avg_rating DESC
         LIMIT ?
-    """, (limit,)).fetchall()
+    """
+    rows = conn.execute(sql, params).fetchall()
     conn.close()
     result = [dict(r) for r in rows]
     for d in result:
@@ -348,24 +463,28 @@ def get_top_batsmen(limit=10):
     return result
 
 
-def get_top_bowlers(limit=10):
+def get_top_bowlers(limit=10, event_id=None):
     conn = get_db()
-    rows = conn.execute("""
-        SELECT player_name,
+    event_clause = "AND m.event_id = ?" if event_id else ""
+    params = (event_id, limit) if event_id else (limit,)
+    sql = f"""
+        SELECT pr.player_name,
                COUNT(*) as matches,
-               ROUND(AVG(bowling_rating), 2) as avg_rating,
-               SUM(wickets) as total_wickets,
-               SUM(overs_bowled) as total_overs,
-               SUM(runs_conceded) as total_runs_conceded,
-               MAX(overall_rating) as best_rating,
-               GROUP_CONCAT(DISTINCT team) as teams
-        FROM player_ratings
-        WHERE did_bowl = 1
-        GROUP BY LOWER(player_name)
-        HAVING SUM(wickets) >= 7 AND COUNT(*) >= 4
+               ROUND(AVG(pr.bowling_rating), 2) as avg_rating,
+               SUM(pr.wickets) as total_wickets,
+               SUM(pr.overs_bowled) as total_overs,
+               SUM(pr.runs_conceded) as total_runs_conceded,
+               MAX(pr.overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT pr.team) as teams
+        FROM player_ratings pr
+        JOIN matches m ON pr.match_id = m.id
+        WHERE pr.did_bowl = 1 {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING SUM(pr.wickets) >= 7 AND COUNT(*) >= 4
         ORDER BY avg_rating DESC
         LIMIT ?
-    """, (limit,)).fetchall()
+    """
+    rows = conn.execute(sql, params).fetchall()
     conn.close()
     result = [dict(r) for r in rows]
     for d in result:
@@ -380,26 +499,30 @@ def get_top_bowlers(limit=10):
     return result
 
 
-def get_top_all_rounders(limit=10):
+def get_top_all_rounders(limit=10, event_id=None):
     """Top all-rounders: combined = 60% major + 40% minor (bat AR: 60% bat, 40% bowl; bowl AR: 60% bowl, 40% bat)."""
     conn = get_db()
-    rows = conn.execute("""
-        SELECT player_name,
+    event_clause = "AND m.event_id = ?" if event_id else ""
+    params = (event_id,) if event_id else ()
+    sql = f"""
+        SELECT pr.player_name,
                COUNT(*) as matches,
-               ROUND(AVG(batting_rating), 2) as avg_bat,
-               ROUND(AVG(bowling_rating), 2) as avg_bowl,
-               SUM(CASE WHEN role = 'batting_all_rounder' THEN 1 ELSE 0 END) as bat_ar_count,
-               SUM(CASE WHEN role = 'bowling_all_rounder' THEN 1 ELSE 0 END) as bowl_ar_count,
-               SUM(runs) as total_runs,
-               SUM(wickets) as total_wickets,
-               MAX(overall_rating) as best_rating,
-               GROUP_CONCAT(DISTINCT team) as teams
-        FROM player_ratings
-        WHERE did_bat = 1 AND did_bowl = 1
-          AND role IN ('batting_all_rounder', 'bowling_all_rounder')
-        GROUP BY LOWER(player_name)
-        HAVING ((SUM(runs) >= 50 AND SUM(wickets) >= 3) OR (SUM(runs) >= 75 AND SUM(wickets) >= 2)) AND COUNT(*) >= 4
-    """).fetchall()
+               ROUND(AVG(pr.batting_rating), 2) as avg_bat,
+               ROUND(AVG(pr.bowling_rating), 2) as avg_bowl,
+               SUM(CASE WHEN pr.role = 'batting_all_rounder' THEN 1 ELSE 0 END) as bat_ar_count,
+               SUM(CASE WHEN pr.role = 'bowling_all_rounder' THEN 1 ELSE 0 END) as bowl_ar_count,
+               SUM(pr.runs) as total_runs,
+               SUM(pr.wickets) as total_wickets,
+               MAX(pr.overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT pr.team) as teams
+        FROM player_ratings pr
+        JOIN matches m ON pr.match_id = m.id
+        WHERE pr.did_bat = 1 AND pr.did_bowl = 1
+          AND pr.role IN ('batting_all_rounder', 'bowling_all_rounder') {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
+    """
+    rows = conn.execute(sql, params).fetchall()
     conn.close()
     result = []
     for r in rows:
@@ -419,91 +542,103 @@ def get_top_all_rounders(limit=10):
     return result[:limit]
 
 
-def get_best_team_of_tournament():
-    """Best team of tournament: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers."""
+def get_best_team_of_tournament(event_id=None):
+    """Best team of tournament: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers. Optional event_id filters to that event."""
     conn = get_db()
+    event_clause = "AND m.event_id = ?" if event_id else ""
+    join_clause = "JOIN matches m ON pr.match_id = m.id"
+    params_batsmen = (event_id,) if event_id else ()
+    params_wk = (event_id,) if event_id else ()
+    params_bat_ar = (event_id,) if event_id else ()
+    params_bowl_ar = (event_id,) if event_id else ()
+    params_bowlers = (event_id,) if event_id else ()
     result = {}
 
     # 5 batsmen (role = batter, min 150 runs)
-    rows = conn.execute("""
-        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
-               COUNT(*) as matches, ROUND(AVG(batting_rating), 2) as avg_rating,
-               SUM(runs) as total_runs, SUM(balls) as total_balls,
-               MAX(overall_rating) as best_rating
-        FROM player_ratings
-        WHERE role = 'batter' AND did_bat = 1
-        GROUP BY LOWER(player_name)
-        HAVING SUM(runs) >= 150 AND COUNT(*) >= 4
-        ORDER BY AVG(batting_rating) DESC
+    rows = conn.execute(f"""
+        SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
+               COUNT(*) as matches, ROUND(AVG(pr.batting_rating), 2) as avg_rating,
+               SUM(pr.runs) as total_runs, SUM(pr.balls) as total_balls,
+               MAX(pr.overall_rating) as best_rating
+        FROM player_ratings pr
+        {join_clause}
+        WHERE pr.role = 'batter' AND pr.did_bat = 1 {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING SUM(pr.runs) >= 150 AND COUNT(*) >= 4
+        ORDER BY AVG(pr.batting_rating) DESC
         LIMIT 5
-    """).fetchall()
+    """, params_batsmen).fetchall()
     result["batsmen"] = [dict(r) for r in rows]
 
     # 1 wicket-keeper (role = wicket_keeper, min 150 runs)
-    rows = conn.execute("""
-        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
-               COUNT(*) as matches, ROUND(AVG(overall_rating), 2) as avg_rating,
-               SUM(runs) as total_runs, SUM(wickets) as total_wickets,
-               MAX(overall_rating) as best_rating
-        FROM player_ratings
-        WHERE role = 'wicket_keeper' AND did_bat = 1
-        GROUP BY LOWER(player_name)
-        HAVING SUM(runs) >= 150 AND COUNT(*) >= 4
-        ORDER BY AVG(overall_rating) DESC
+    rows = conn.execute(f"""
+        SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
+               COUNT(*) as matches, ROUND(AVG(pr.overall_rating), 2) as avg_rating,
+               SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
+               MAX(pr.overall_rating) as best_rating
+        FROM player_ratings pr
+        {join_clause}
+        WHERE pr.role = 'wicket_keeper' AND pr.did_bat = 1 {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING SUM(pr.runs) >= 150 AND COUNT(*) >= 4
+        ORDER BY AVG(pr.overall_rating) DESC
         LIMIT 1
-    """).fetchall()
+    """, params_wk).fetchall()
     result["wicket_keeper"] = [dict(r) for r in rows]
 
-    # 2 batting all-rounders: (50 runs & 3 wkts) OR (75 runs & 2 wkts)
-    rows = conn.execute("""
-        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
+    # 2 batting all-rounders
+    rows = conn.execute(f"""
+        SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
                COUNT(*) as matches,
-               ROUND(AVG(batting_rating), 2) as avg_bat,
-               ROUND(AVG(bowling_rating), 2) as avg_bowl,
-               ROUND((AVG(batting_rating) + AVG(bowling_rating)) / 2, 2) as avg_rating,
-               SUM(runs) as total_runs, SUM(wickets) as total_wickets,
-               MAX(overall_rating) as best_rating
-        FROM player_ratings
-        WHERE role = 'batting_all_rounder' AND did_bat = 1 AND did_bowl = 1
-        GROUP BY LOWER(player_name)
-        HAVING ((SUM(runs) >= 50 AND SUM(wickets) >= 3) OR (SUM(runs) >= 75 AND SUM(wickets) >= 2)) AND COUNT(*) >= 4
-        ORDER BY (AVG(batting_rating) + AVG(bowling_rating)) / 2 DESC
+               ROUND(AVG(pr.batting_rating), 2) as avg_bat,
+               ROUND(AVG(pr.bowling_rating), 2) as avg_bowl,
+               ROUND((AVG(pr.batting_rating) + AVG(pr.bowling_rating)) / 2, 2) as avg_rating,
+               SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
+               MAX(pr.overall_rating) as best_rating
+        FROM player_ratings pr
+        {join_clause}
+        WHERE pr.role = 'batting_all_rounder' AND pr.did_bat = 1 AND pr.did_bowl = 1 {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
+        ORDER BY (AVG(pr.batting_rating) + AVG(pr.bowling_rating)) / 2 DESC
         LIMIT 2
-    """).fetchall()
+    """, params_bat_ar).fetchall()
     result["bat_all_rounders"] = [dict(r) for r in rows]
 
-    # 1 bowling all-rounder: (50 runs & 3 wkts) OR (75 runs & 2 wkts)
-    rows = conn.execute("""
-        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
+    # 1 bowling all-rounder
+    rows = conn.execute(f"""
+        SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
                COUNT(*) as matches,
-               ROUND(AVG(batting_rating), 2) as avg_bat,
-               ROUND(AVG(bowling_rating), 2) as avg_bowl,
-               ROUND((AVG(batting_rating) + AVG(bowling_rating)) / 2, 2) as avg_rating,
-               SUM(runs) as total_runs, SUM(wickets) as total_wickets,
-               MAX(overall_rating) as best_rating
-        FROM player_ratings
-        WHERE role = 'bowling_all_rounder' AND did_bat = 1 AND did_bowl = 1
-        GROUP BY LOWER(player_name)
-        HAVING ((SUM(runs) >= 50 AND SUM(wickets) >= 3) OR (SUM(runs) >= 75 AND SUM(wickets) >= 2)) AND COUNT(*) >= 4
-        ORDER BY (AVG(batting_rating) + AVG(bowling_rating)) / 2 DESC
+               ROUND(AVG(pr.batting_rating), 2) as avg_bat,
+               ROUND(AVG(pr.bowling_rating), 2) as avg_bowl,
+               ROUND((AVG(pr.batting_rating) + AVG(pr.bowling_rating)) / 2, 2) as avg_rating,
+               SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
+               MAX(pr.overall_rating) as best_rating
+        FROM player_ratings pr
+        {join_clause}
+        WHERE pr.role = 'bowling_all_rounder' AND pr.did_bat = 1 AND pr.did_bowl = 1 {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
+        ORDER BY (AVG(pr.batting_rating) + AVG(pr.bowling_rating)) / 2 DESC
         LIMIT 1
-    """).fetchall()
+    """, params_bowl_ar).fetchall()
     result["bowl_all_rounder"] = [dict(r) for r in rows]
 
-    # 3 bowlers (role = bowler, min 5 wickets)
-    rows = conn.execute("""
-        SELECT player_name, GROUP_CONCAT(DISTINCT team) as teams,
-               COUNT(*) as matches, ROUND(AVG(bowling_rating), 2) as avg_rating,
-               SUM(wickets) as total_wickets, SUM(overs_bowled) as total_overs,
-               SUM(runs_conceded) as total_runs_conceded,
-               MAX(overall_rating) as best_rating
-        FROM player_ratings
-        WHERE role = 'bowler' AND did_bowl = 1
-        GROUP BY LOWER(player_name)
-        HAVING SUM(wickets) >= 7 AND COUNT(*) >= 4
-        ORDER BY AVG(bowling_rating) DESC
+    # 3 bowlers (role = bowler, min 7 wickets)
+    rows = conn.execute(f"""
+        SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
+               COUNT(*) as matches, ROUND(AVG(pr.bowling_rating), 2) as avg_rating,
+               SUM(pr.wickets) as total_wickets, SUM(pr.overs_bowled) as total_overs,
+               SUM(pr.runs_conceded) as total_runs_conceded,
+               MAX(pr.overall_rating) as best_rating
+        FROM player_ratings pr
+        {join_clause}
+        WHERE pr.role = 'bowler' AND pr.did_bowl = 1 {event_clause}
+        GROUP BY LOWER(pr.player_name)
+        HAVING SUM(pr.wickets) >= 7 AND COUNT(*) >= 4
+        ORDER BY AVG(pr.bowling_rating) DESC
         LIMIT 3
-    """).fetchall()
+    """, params_bowlers).fetchall()
     result["bowlers"] = [dict(r) for r in rows]
 
     conn.close()
@@ -588,17 +723,27 @@ def get_player_comparison(name1: str, name2: str):
     return result
 
 
-def get_player_form(player_name: str, limit=5):
-    """Get last N match ratings for a player (most recent first)."""
+def get_player_form(player_name: str, limit=5, event_id=None):
+    """Get last N match ratings for a player (most recent first). If event_id given, filter to that event."""
     conn = get_db()
-    rows = conn.execute("""
-        SELECT pr.overall_rating
-        FROM player_ratings pr
-        JOIN matches m ON pr.match_id = m.id
-        WHERE LOWER(pr.player_name) = LOWER(?)
-        ORDER BY m.id DESC
-        LIMIT ?
-    """, (player_name, limit)).fetchall()
+    if event_id:
+        rows = conn.execute("""
+            SELECT pr.overall_rating
+            FROM player_ratings pr
+            JOIN matches m ON pr.match_id = m.id
+            WHERE LOWER(pr.player_name) = LOWER(?) AND m.event_id = ?
+            ORDER BY m.id DESC
+            LIMIT ?
+        """, (player_name, event_id, limit)).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT pr.overall_rating
+            FROM player_ratings pr
+            JOIN matches m ON pr.match_id = m.id
+            WHERE LOWER(pr.player_name) = LOWER(?)
+            ORDER BY m.id DESC
+            LIMIT ?
+        """, (player_name, limit)).fetchall()
     conn.close()
     return [r["overall_rating"] for r in rows]
 

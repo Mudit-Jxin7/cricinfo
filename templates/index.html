@@ -14,6 +14,17 @@
             <h2 class="section-title">Match Information</h2>
             <div class="form-grid match-info-grid">
                 <div class="form-group">
+                    <label for="event_id">Event</label>
+                    <select id="event_id" name="event_id">
+                        {% for e in events %}
+                        <option value="{{ e.id }}" {{ 'selected' if loop.first else '' }}>{{ e.name }}</option>
+                        {% endfor %}
+                        {% if not events %}
+                        <option value="1">World Cup 2026</option>
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="team1_name">Team 1 (Batted First)</label>
                     <input type="text" id="team1_name" name="team1_name" placeholder="e.g. India" required>
                 </div>

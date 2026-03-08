@@ -3,7 +3,17 @@
 
 {% block content %}
 <h1 class="page-title">Saved Matches</h1>
-<p class="page-subtitle">Browse all matches you've rated.</p>
+<p class="page-subtitle">Browse all matches you've rated. Filter by event below.</p>
+
+<div class="event-filter-bar">
+    <label for="event_filter">Event:</label>
+    <select id="event_filter" onchange="window.location.href=this.value ? '/matches?event_id='+this.value : '/matches';">
+        <option value="">All events</option>
+        {% for e in events %}
+        <option value="{{ e.id }}" {{ 'selected' if current_event_id == e.id else '' }}>{{ e.name }}</option>
+        {% endfor %}
+    </select>
+</div>
 
 {% if matches %}
 <div class="matches-list">
@@ -21,6 +31,7 @@
                 <span class="match-score-text">{{ m.team2_score }}</span>
             </div>
             <div class="match-list-meta">
+                {% if m.event_name %}<span class="meta-event">{{ m.event_name }}</span>{% endif %}
                 {% if m.mvp_name %}<span class="meta-mvp">&#9733; {{ m.mvp_name }}</span>{% endif %}
                 {% if m.venue %}<span class="meta-venue">{{ m.venue }}</span>{% endif %}
                 <span class="meta-date">{{ m.created_at[:10] }}</span>

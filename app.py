@@ -46,14 +46,40 @@ app.jinja_env.globals["_rating_color"] = _rating_color
 @app.route("/")
 def index():
     """Render the match input form."""
-    return render_template("index.html")
+    events = db.get_all_events()
+    return render_template("index.html", events=events)
+
+
+@app.route("/events", methods=["GET", "POST"])
+def events_page():
+    """List all events; POST to create a new event."""
+    if request.method == "POST":
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
+            name = (data.get("name") or "").strip()
+        else:
+            name = (request.form.get("name") or "").strip()
+        if not name:
+            if request.is_json:
+                return jsonify({"success": False, "error": "Event name required"}), 400
+            return redirect(url_for("events_page"))
+        eid = db.create_event(name)
+        if request.is_json:
+            return jsonify({"success": True, "event_id": eid, "name": name})
+        return redirect(url_for("events_page"))
+    events = db.get_all_events()
+    return render_template("events.html", events=events)
 
 
 @app.route("/matches")
 def matches_page():
-    """Show all saved matches."""
-    matches = db.get_all_matches()
-    return render_template("matches.html", matches=matches)
+    """Show all saved matches. Optional ?event_id= filters by event."""
+    event_id = request.args.get("event_id", type=int)
+    matches = db.get_all_matches(event_id=event_id)
+    events = db.get_all_events()
+    current_event = db.get_event(event_id) if event_id else None
+    return render_template("matches.html", matches=matches, events=events,
+                           current_event_id=event_id, current_event=current_event)
 
 
 @app.route("/match/<int:match_id>")
@@ -82,12 +108,13 @@ def players_page():
 
 @app.route("/player/<name>")
 def player_detail(name):
-    """Show a player's full rating history."""
-    history = db.get_player_history(name)
+    """Show a player's full rating history. Optional ?event_id= filters to that event."""
+    event_id = request.args.get("event_id", type=int)
+    history = db.get_player_history(name, event_id=event_id)
     if not history:
         return "Player not found", 404
 
-    # Compute averages
+    # Compute averages from (possibly event-filtered) history
     avg_overall = round(sum(h["overall_rating"] for h in history) / len(history), 1)
     avg_bat = round(sum(h["batting_rating"] for h in history) / len(history), 1)
     avg_bowl = round(sum(h["bowling_rating"] for h in history) / len(history), 1)
@@ -131,10 +158,13 @@ def player_detail(name):
         "economy": economy,
     }
 
-    awards = db.get_player_awards(name)
+    awards = db.get_player_awards(name, event_id=event_id)
 
-    # Form guide (last 5, most recent first)
-    form_guide = db.get_player_form(name, 5)
+    # Form guide (last 5, most recent first), event-scoped if event_id set
+    form_guide = db.get_player_form(name, 5, event_id=event_id)
+
+    # Events this player has played in (for event selector)
+    player_events = db.get_player_events(name)
 
     # Win/Loss impact
     win_ratings = []
@@ -186,7 +216,8 @@ def player_detail(name):
 
     return render_template("player_detail.html", name=name, history=history,
                            stats=stats, awards=awards, trend_data=trend_data,
-                           form_guide=form_guide, win_loss=win_loss)
+                           form_guide=form_guide, win_loss=win_loss,
+                           player_events=player_events, current_event_id=event_id)
 
 
 @app.route("/compare")
@@ -211,19 +242,27 @@ def api_players():
 
 @app.route("/leaderboard")
 def leaderboard():
-    """Top 10 batsmen, bowlers, and all-rounders."""
-    batsmen = db.get_top_batsmen(10)
-    bowlers = db.get_top_bowlers(10)
-    all_rounders = db.get_top_all_rounders(5)
+    """Top 10 batsmen, bowlers, and all-rounders. Optional ?event_id= filters by event."""
+    event_id = request.args.get("event_id", type=int)
+    batsmen = db.get_top_batsmen(10, event_id=event_id)
+    bowlers = db.get_top_bowlers(10, event_id=event_id)
+    all_rounders = db.get_top_all_rounders(5, event_id=event_id)
+    events = db.get_all_events()
+    current_event = db.get_event(event_id) if event_id else None
     return render_template("leaderboard.html",
-                           batsmen=batsmen, bowlers=bowlers, all_rounders=all_rounders)
+                           batsmen=batsmen, bowlers=bowlers, all_rounders=all_rounders,
+                           events=events, current_event_id=event_id, current_event=current_event)
 
 
 @app.route("/best-team")
 def best_team():
-    """Best team of tournament: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers."""
-    team = db.get_best_team_of_tournament()
-    return render_template("best_team.html", team=team)
+    """Best team of tournament. Optional ?event_id= filters by event."""
+    event_id = request.args.get("event_id", type=int)
+    team = db.get_best_team_of_tournament(event_id=event_id)
+    events = db.get_all_events()
+    current_event = db.get_event(event_id) if event_id else None
+    return render_template("best_team.html", team=team,
+                           events=events, current_event_id=event_id, current_event=current_event)
 
 
 # ───── Teams ─────
@@ -290,8 +329,11 @@ def save_match():
         team1_players = data["team1"]["players"]
         team2_players = data["team2"]["players"]
         raw_form = data.get("raw_form", {})
+        event_id = data.get("event_id")
+        if event_id is None:
+            event_id = 1
 
-        match_id = db.save_match(match_info, team1_players, team2_players, raw_form)
+        match_id = db.save_match(match_info, team1_players, team2_players, raw_form, event_id=event_id)
         return jsonify({"success": True, "match_id": match_id})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400

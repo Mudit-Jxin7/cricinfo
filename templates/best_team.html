@@ -3,7 +3,17 @@
 
 {% block content %}
 <h1 class="page-title">Best Team of Tournament</h1>
-<p class="page-subtitle">Best XI so far: 5 batsmen, 1 wicket-keeper, 2 batting all-rounders, 1 bowling all-rounder, 3 bowlers.</p>
+<p class="page-subtitle">Best XI so far{% if current_event %} in {{ current_event.name }}{% endif %}: 5 batsmen, 1 wicket-keeper, 2 batting all-rounders, 1 bowling all-rounder, 3 bowlers.</p>
+
+<div class="event-filter-bar">
+    <label for="event_filter">Event:</label>
+    <select id="event_filter" onchange="window.location.href=this.value ? '/best-team?event_id='+this.value : '/best-team';">
+        <option value="">All events</option>
+        {% for e in events %}
+        <option value="{{ e.id }}" {{ 'selected' if current_event_id == e.id else '' }}>{{ e.name }}</option>
+        {% endfor %}
+    </select>
+</div>
 
 <div class="best-team-grid">
     <!-- 5 Batsmen -->

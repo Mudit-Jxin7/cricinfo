@@ -3,7 +3,17 @@
 
 {% block content %}
 <h1 class="page-title">Leaderboard</h1>
-<p class="page-subtitle">Top 10 performers across all rated matches.</p>
+<p class="page-subtitle">Top 10 performers across rated matches{% if current_event %} in {{ current_event.name }}{% else %} (all events){% endif %}.</p>
+
+<div class="event-filter-bar">
+    <label for="event_filter">Event:</label>
+    <select id="event_filter" onchange="window.location.href=this.value ? '/leaderboard?event_id='+this.value : '/leaderboard';">
+        <option value="">All events</option>
+        {% for e in events %}
+        <option value="{{ e.id }}" {{ 'selected' if current_event_id == e.id else '' }}>{{ e.name }}</option>
+        {% endfor %}
+    </select>
+</div>
 
 <div class="leaderboard-tabs">
     <button class="lb-tab active" onclick="showTab('batsmen')">Top Batsmen</button>

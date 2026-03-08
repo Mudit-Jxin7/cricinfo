@@ -217,7 +217,9 @@ function collectFielding(tableId) {
 async function handleSubmit(e) {
     e.preventDefault();
 
+    const eventIdEl = document.getElementById('event_id');
     const data = {
+        event_id: eventIdEl ? parseInt(eventIdEl.value, 10) || 1 : 1,
         team1_name: document.getElementById('team1_name').value.trim() || 'Team 1',
         team2_name: document.getElementById('team2_name').value.trim() || 'Team 2',
         winner: document.getElementById('winner').value,
@@ -495,7 +497,10 @@ async function saveMatch() {
     btn.textContent = 'Saving...';
 
     try {
+        const eventIdEl = document.getElementById('event_id');
+        const eventId = (window._lastFormData && window._lastFormData.event_id) || (eventIdEl ? parseInt(eventIdEl.value, 10) : null) || 1;
         const payload = {
+            event_id: eventId,
             match_info: {
                 team1_name: window._lastResult.match_info.team1_name || window._lastResult.team1.name,
                 team2_name: window._lastResult.match_info.team2_name || window._lastResult.team2.name,

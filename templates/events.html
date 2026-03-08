@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Events - CricScore{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Events</h1>
+<p class="page-subtitle">Create and manage events. Matches, leaderboards, and best team can be filtered by event.</p>
+
+<div class="events-actions">
+    <form method="post" action="{{ url_for('events_page') }}" class="events-create-form">
+        <input type="text" name="name" placeholder="e.g. World Cup 2026" required class="form-control events-name-input">
+        <button type="submit" class="btn btn-primary">Create Event</button>
+    </form>
+</div>
+
+{% if events %}
+<ul class="events-list">
+    {% for e in events %}
+    <li class="event-item">
+        <a href="/matches?event_id={{ e.id }}" class="event-link">
+            <span class="event-name">{{ e.name }}</span>
+            <span class="event-meta">Matches</span>
+        </a>
+        <a href="/leaderboard?event_id={{ e.id }}" class="event-link-sub">Leaderboard</a>
+        <a href="/best-team?event_id={{ e.id }}" class="event-link-sub">Best Team</a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="empty-state">
+    <h3>No events yet</h3>
+    <p>Create an event above (e.g. World Cup 2026). Your first event will be used as the default for new matches.</p>
+</div>
+{% endif %}
+{% endblock %}

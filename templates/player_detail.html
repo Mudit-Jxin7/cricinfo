@@ -15,6 +15,17 @@
                 <span class="profile-mvp-badge">&#9733; {{ stats.mvp_count }} MVP{{ 's' if stats.mvp_count != 1 else '' }}</span>
                 {% endif %}
             </p>
+            {% if player_events|length > 1 or current_event_id %}
+            <div class="event-filter-bar event-filter-inline">
+                <label for="event_filter">Performance in:</label>
+                <select id="event_filter" onchange="var v=this.value; window.location.href='{{ url_for("player_detail", name=name) }}' + (v ? '?event_id='+v : '');">
+                    <option value="" {{ 'selected' if not current_event_id else '' }}>All events</option>
+                    {% for e in player_events %}
+                    <option value="{{ e.id }}" {{ 'selected' if current_event_id == e.id else '' }}>{{ e.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
         </div>
     </div>
 
