@@ -572,8 +572,15 @@ def get_top_all_rounders(limit=10, event_id=None):
 
 
 def get_best_team_of_tournament(event_id=None):
-    """Best team of tournament: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers. Optional event_id filters to that event."""
+    """Best team of tournament. Default: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers.
+    For event named 'IPL 2025': 6 batsmen, 1 wk, 1 bat AR, 1 bowl AR, 4 bowlers."""
     conn = get_db()
+    event = get_event(event_id) if event_id else None
+    is_ipl_2025 = event and (event.get("name") or "").strip().lower() == "ipl 2025"
+    n_batsmen = 6 if is_ipl_2025 else 5
+    n_bat_ar = 1 if is_ipl_2025 else 2
+    n_bowlers = 4 if is_ipl_2025 else 3
+
     event_clause = "AND m.event_id = ?" if event_id else ""
     join_clause = "JOIN matches m ON pr.match_id = m.id"
     params_batsmen = (event_id,) if event_id else ()
@@ -595,8 +602,8 @@ def get_best_team_of_tournament(event_id=None):
         GROUP BY LOWER(pr.player_name)
         HAVING SUM(pr.runs) >= 150 AND COUNT(*) >= 4
         ORDER BY AVG(pr.batting_rating) DESC
-        LIMIT 5
-    """, params_batsmen).fetchall()
+        LIMIT ?
+    """, (*params_batsmen, n_batsmen)).fetchall()
     result["batsmen"] = [dict(r) for r in rows]
 
     # 1 wicket-keeper (role = wicket_keeper, min 150 runs)
@@ -630,8 +637,8 @@ def get_best_team_of_tournament(event_id=None):
         GROUP BY LOWER(pr.player_name)
         HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
         ORDER BY (AVG(pr.batting_rating) + AVG(pr.bowling_rating)) / 2 DESC
-        LIMIT 2
-    """, params_bat_ar).fetchall()
+        LIMIT ?
+    """, (*params_bat_ar, n_bat_ar)).fetchall()
     result["bat_all_rounders"] = [dict(r) for r in rows]
 
     # 1 bowling all-rounder
@@ -666,8 +673,8 @@ def get_best_team_of_tournament(event_id=None):
         GROUP BY LOWER(pr.player_name)
         HAVING SUM(pr.wickets) >= 7 AND COUNT(*) >= 4
         ORDER BY AVG(pr.bowling_rating) DESC
-        LIMIT 3
-    """, params_bowlers).fetchall()
+        LIMIT ?
+    """, (*params_bowlers, n_bowlers)).fetchall()
     result["bowlers"] = [dict(r) for r in rows]
 
     conn.close()

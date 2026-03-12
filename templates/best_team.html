@@ -3,7 +3,7 @@
 
 {% block content %}
 <h1 class="page-title">Best Team of Tournament</h1>
-<p class="page-subtitle">Best XI so far{% if current_event %} in {{ current_event.name }}{% endif %}: 5 batsmen, 1 wicket-keeper, 2 batting all-rounders, 1 bowling all-rounder, 3 bowlers.</p>
+<p class="page-subtitle">Best XI so far{% if current_event %} in {{ current_event.name }}{% endif %}: {{ team.batsmen|length }} batsmen, 1 wicket-keeper, {{ team.bat_all_rounders|length }} batting all-rounder{% if team.bat_all_rounders|length != 1 %}s{% endif %}, 1 bowling all-rounder, {{ team.bowlers|length }} bowlers.</p>
 
 <div class="event-filter-bar">
     <label for="event_filter">Event:</label>
@@ -18,7 +18,7 @@
 <div class="best-team-grid">
     <!-- 5 Batsmen -->
     <div class="best-team-section">
-        <h2 class="best-team-section-title">Batsmen (5)</h2>
+        <h2 class="best-team-section-title">Batsmen ({{ team.batsmen|length }})</h2>
         {% if team.batsmen %}
         <div class="best-team-cards">
             {% for p in team.batsmen %}
@@ -56,7 +56,7 @@
 
     <!-- 2 Batting all-rounders -->
     <div class="best-team-section">
-        <h2 class="best-team-section-title">Batting all-rounders (2)</h2>
+        <h2 class="best-team-section-title">Batting all-rounders ({{ team.bat_all_rounders|length }})</h2>
         {% if team.bat_all_rounders %}
         <div class="best-team-cards">
             {% for p in team.bat_all_rounders %}
@@ -94,7 +94,7 @@
 
     <!-- 3 Bowlers -->
     <div class="best-team-section">
-        <h2 class="best-team-section-title">Bowlers (3)</h2>
+        <h2 class="best-team-section-title">Bowlers ({{ team.bowlers|length }})</h2>
         {% if team.bowlers %}
         <div class="best-team-cards">
             {% for p in team.bowlers %}
