@@ -573,7 +573,7 @@ def get_top_all_rounders(limit=10, event_id=None):
 
 def get_best_team_of_tournament(event_id=None):
     """Best team of tournament. Default: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers.
-    For event named 'IPL 2025': 6 batsmen, 1 wk, 1 bat AR, 1 bowl AR, 4 bowlers."""
+    For event named 'IPL 2025': 6 batsmen, 1 wk, 2 best all-rounders (any role), 4 bowlers."""
     conn = get_db()
     event = get_event(event_id) if event_id else None
     is_ipl_2025 = event and (event.get("name") or "").strip().lower() == "ipl 2025"
@@ -588,9 +588,10 @@ def get_best_team_of_tournament(event_id=None):
     params_bat_ar = (event_id,) if event_id else ()
     params_bowl_ar = (event_id,) if event_id else ()
     params_bowlers = (event_id,) if event_id else ()
+    params_all_ar = (event_id,) if event_id else ()
     result = {}
 
-    # 5 batsmen (role = batter, min 150 runs)
+    # Batsmen (role = batter, min 150 runs)
     rows = conn.execute(f"""
         SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
                COUNT(*) as matches, ROUND(AVG(pr.batting_rating), 2) as avg_rating,
@@ -622,45 +623,68 @@ def get_best_team_of_tournament(event_id=None):
     """, params_wk).fetchall()
     result["wicket_keeper"] = [dict(r) for r in rows]
 
-    # Batting all-rounders: include all matches (bat and/or bowl); avg bat/bowl only over innings where they did that skill
-    rows = conn.execute(f"""
-        SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
-               COUNT(*) as matches,
-               ROUND(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 2) as avg_bat,
-               ROUND(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 2) as avg_bowl,
-               ROUND((COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2, 2) as avg_rating,
-               SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
-               MAX(pr.overall_rating) as best_rating
-        FROM player_ratings pr
-        {join_clause}
-        WHERE pr.role = 'batting_all_rounder' AND (pr.did_bat = 1 OR pr.did_bowl = 1) {event_clause}
-        GROUP BY LOWER(pr.player_name)
-        HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
-        ORDER BY (COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2 DESC
-        LIMIT ?
-    """, (*params_bat_ar, n_bat_ar)).fetchall()
-    result["bat_all_rounders"] = [dict(r) for r in rows]
+    if is_ipl_2025:
+        # IPL 2025: 2 best all-rounders irrespective of batting/bowling role
+        result["bat_all_rounders"] = []
+        result["bowl_all_rounder"] = []
+        rows = conn.execute(f"""
+            SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
+                   COUNT(*) as matches,
+                   ROUND(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 2) as avg_bat,
+                   ROUND(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 2) as avg_bowl,
+                   ROUND((COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2, 2) as avg_rating,
+                   SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
+                   MAX(pr.overall_rating) as best_rating
+            FROM player_ratings pr
+            {join_clause}
+            WHERE pr.role IN ('batting_all_rounder', 'bowling_all_rounder') AND (pr.did_bat = 1 OR pr.did_bowl = 1) {event_clause}
+            GROUP BY LOWER(pr.player_name)
+            HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
+            ORDER BY (COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2 DESC
+            LIMIT 2
+        """, params_all_ar).fetchall()
+        result["all_rounders"] = [dict(r) for r in rows]
+    else:
+        result["all_rounders"] = []
+        # Batting all-rounders: include all matches (bat and/or bowl); avg bat/bowl only over innings where they did that skill
+        rows = conn.execute(f"""
+            SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
+                   COUNT(*) as matches,
+                   ROUND(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 2) as avg_bat,
+                   ROUND(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 2) as avg_bowl,
+                   ROUND((COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2, 2) as avg_rating,
+                   SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
+                   MAX(pr.overall_rating) as best_rating
+            FROM player_ratings pr
+            {join_clause}
+            WHERE pr.role = 'batting_all_rounder' AND (pr.did_bat = 1 OR pr.did_bowl = 1) {event_clause}
+            GROUP BY LOWER(pr.player_name)
+            HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
+            ORDER BY (COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2 DESC
+            LIMIT ?
+        """, (*params_bat_ar, n_bat_ar)).fetchall()
+        result["bat_all_rounders"] = [dict(r) for r in rows]
 
-    # 1 bowling all-rounder: include all matches (bat and/or bowl); avg bat/bowl only over innings where they did that skill
-    rows = conn.execute(f"""
-        SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
-               COUNT(*) as matches,
-               ROUND(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 2) as avg_bat,
-               ROUND(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 2) as avg_bowl,
-               ROUND((COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2, 2) as avg_rating,
-               SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
-               MAX(pr.overall_rating) as best_rating
-        FROM player_ratings pr
-        {join_clause}
-        WHERE pr.role = 'bowling_all_rounder' AND (pr.did_bat = 1 OR pr.did_bowl = 1) {event_clause}
-        GROUP BY LOWER(pr.player_name)
-        HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
-        ORDER BY (COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2 DESC
-        LIMIT 1
-    """, params_bowl_ar).fetchall()
-    result["bowl_all_rounder"] = [dict(r) for r in rows]
+        # 1 bowling all-rounder: include all matches (bat and/or bowl); avg bat/bowl only over innings where they did that skill
+        rows = conn.execute(f"""
+            SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
+                   COUNT(*) as matches,
+                   ROUND(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 2) as avg_bat,
+                   ROUND(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 2) as avg_bowl,
+                   ROUND((COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2, 2) as avg_rating,
+                   SUM(pr.runs) as total_runs, SUM(pr.wickets) as total_wickets,
+                   MAX(pr.overall_rating) as best_rating
+            FROM player_ratings pr
+            {join_clause}
+            WHERE pr.role = 'bowling_all_rounder' AND (pr.did_bat = 1 OR pr.did_bowl = 1) {event_clause}
+            GROUP BY LOWER(pr.player_name)
+            HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
+            ORDER BY (COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2 DESC
+            LIMIT 1
+        """, params_bowl_ar).fetchall()
+        result["bowl_all_rounder"] = [dict(r) for r in rows]
 
-    # 3 bowlers (role = bowler, min 7 wickets)
+    # Bowlers (role = bowler, min 7 wickets)
     rows = conn.execute(f"""
         SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
                COUNT(*) as matches, ROUND(AVG(pr.bowling_rating), 2) as avg_rating,

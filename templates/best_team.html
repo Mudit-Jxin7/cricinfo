@@ -3,7 +3,7 @@
 
 {% block content %}
 <h1 class="page-title">Best Team of Tournament</h1>
-<p class="page-subtitle">Best XI so far{% if current_event %} in {{ current_event.name }}{% endif %}: {{ team.batsmen|length }} batsmen, 1 wicket-keeper, {{ team.bat_all_rounders|length }} batting all-rounder{% if team.bat_all_rounders|length != 1 %}s{% endif %}, 1 bowling all-rounder, {{ team.bowlers|length }} bowlers.</p>
+<p class="page-subtitle">Best XI so far{% if current_event %} in {{ current_event.name }}{% endif %}: {{ team.batsmen|length }} batsmen, 1 wicket-keeper, {% if team.all_rounders %}2 all-rounders{% else %}{{ team.bat_all_rounders|length }} batting all-rounder{% if team.bat_all_rounders|length != 1 %}s{% endif %}, 1 bowling all-rounder{% endif %}, {{ team.bowlers|length }} bowlers.</p>
 
 <div class="event-filter-bar">
     <label for="event_filter">Event:</label>
@@ -54,7 +54,23 @@
         {% endif %}
     </div>
 
-    <!-- 2 Batting all-rounders -->
+    {% if team.all_rounders %}
+    <!-- 2 Best all-rounders (IPL 2025 style) -->
+    <div class="best-team-section">
+        <h2 class="best-team-section-title">All-rounders ({{ team.all_rounders|length }})</h2>
+        <div class="best-team-cards">
+            {% for p in team.all_rounders %}
+            <a href="/player/{{ p.player_name }}" class="best-team-card">
+                <div class="rating-circle {{ _rating_color(p.avg_rating) }} best-team-rating">{{ p.avg_rating }}</div>
+                <div class="best-team-card-name">{{ p.player_name }}</div>
+                <div class="best-team-card-team">{{ p.teams }}</div>
+                <div class="best-team-card-stats">{{ p.total_runs }} runs, {{ p.total_wickets }} wkts &middot; {{ p.matches }} mat</div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Batting all-rounders -->
     <div class="best-team-section">
         <h2 class="best-team-section-title">Batting all-rounders ({{ team.bat_all_rounders|length }})</h2>
         {% if team.bat_all_rounders %}
@@ -73,7 +89,7 @@
         {% endif %}
     </div>
 
-    <!-- 1 Bowling all-rounder -->
+    <!-- Bowling all-rounder -->
     <div class="best-team-section">
         <h2 class="best-team-section-title">Bowling all-rounder (1)</h2>
         {% if team.bowl_all_rounder %}
@@ -91,6 +107,7 @@
         <p class="best-team-empty">No bowling all-rounder (50 runs & 3 wkts, or 75 runs & 2 wkts) yet.</p>
         {% endif %}
     </div>
+    {% endif %}
 
     <!-- 3 Bowlers -->
     <div class="best-team-section">
