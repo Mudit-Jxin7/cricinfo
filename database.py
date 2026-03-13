@@ -983,6 +983,26 @@ def get_team_matches(team_name: str):
     return result
 
 
+def get_team_players(team_name: str):
+    """Get all players who have played for this team with their average ratings."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT player_name,
+               MAX(role) as role,
+               COUNT(*) as matches,
+               ROUND(AVG(overall_rating), 2) as avg_overall,
+               ROUND(AVG(batting_rating), 2) as avg_bat,
+               ROUND(AVG(bowling_rating), 2) as avg_bowl,
+               ROUND(AVG(fielding_rating), 2) as avg_field
+        FROM player_ratings
+        WHERE team = ?
+        GROUP BY LOWER(player_name)
+        ORDER BY avg_overall DESC
+    """, (team_name,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 def get_team_summary(team_name: str):
     """Get aggregate summary stats for a team across all matches."""
     conn = get_db()

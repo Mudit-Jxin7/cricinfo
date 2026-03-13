@@ -51,6 +51,28 @@
     </div>
 </div>
 
+<!-- Squad: list of players with ratings -->
+<h2 class="section-heading">Squad</h2>
+{% if players %}
+<div class="team-players-grid">
+    {% for p in players %}
+    <a href="/player/{{ p.player_name }}" class="team-player-card">
+        <div class="rating-circle {{ _rating_color(p.avg_overall) }} team-player-rating">{{ p.avg_overall }}</div>
+        <div class="team-player-name">{{ p.player_name }}</div>
+        <div class="team-player-role">{{ p.role.replace('_', ' ')|title }}</div>
+        <div class="team-player-stats">
+            <span title="Batting">BAT {{ p.avg_bat }}</span>
+            <span title="Bowling">BOWL {{ p.avg_bowl }}</span>
+            <span title="Fielding">FIELD {{ p.avg_field }}</span>
+        </div>
+        <div class="team-player-matches">{{ p.matches }} match{{ 'es' if p.matches != 1 else '' }}</div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state-inline">No player ratings recorded for this team yet.</p>
+{% endif %}
+
 <!-- Rating Trend Chart -->
 {% if matches | length > 1 %}
 <h2 class="section-heading">Team Rating Trend</h2>

@@ -281,13 +281,14 @@ def teams_page():
 
 @app.route("/team/<name>")
 def team_detail(name):
-    """Show a team's match history with team avg ratings."""
+    """Show a team's match history with team avg ratings and squad list."""
     summary = db.get_team_summary(name)
     if not summary:
         return "Team not found", 404
     matches = db.get_team_matches(name)
+    players = db.get_team_players(name)
     return render_template("team_detail.html", name=name, summary=summary,
-                           matches=matches)
+                           matches=matches, players=players)
 
 
 # ───── API Endpoints ─────
