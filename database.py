@@ -958,10 +958,12 @@ def get_team_matches(team_name: str):
             WHERE match_id = ? AND team = ?
         """, (match_id, opponent)).fetchone()
 
+        no_result = (m["winner"] or "").strip().upper() == "NR"
         result.append({
             "match_id": match_id,
             "opponent": opponent,
             "won": won,
+            "no_result": no_result,
             "team_score": m["team1_score"] if m["team1"] == team_name else m["team2_score"],
             "opp_score": m["team2_score"] if m["team1"] == team_name else m["team1_score"],
             "venue": m["venue"],
@@ -1003,11 +1005,17 @@ def get_team_summary(team_name: str):
         SELECT COUNT(*) as c FROM matches WHERE winner = ?
     """, (team_name,)).fetchone()["c"]
 
+    no_results = conn.execute("""
+        SELECT COUNT(*) as c FROM matches
+        WHERE (team1 = ? OR team2 = ?) AND (winner = 'NR' OR winner = '')
+    """, (team_name, team_name)).fetchone()["c"]
+
     conn.close()
 
     if not stats or not stats["avg_overall"]:
         return None
 
+    losses = total_matches - wins - no_results
     return {
         "avg_overall": stats["avg_overall"],
         "avg_bat": stats["avg_bat"],
@@ -1016,7 +1024,8 @@ def get_team_summary(team_name: str):
         "best_player_rating": stats["best_player_rating"],
         "total_matches": total_matches,
         "wins": wins,
-        "losses": total_matches - wins,
+        "losses": losses,
+        "no_results": no_results,
         "win_pct": round(wins / total_matches * 100, 1) if total_matches > 0 else 0,
     }
 

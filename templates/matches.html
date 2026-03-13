@@ -21,14 +21,15 @@
     <a href="/match/{{ m.id }}" class="match-card-link">
         <div class="match-list-card">
             <div class="match-list-teams">
-                <span class="match-team {{ 'team-winner' if m.winner == m.team1 else '' }}">{{ m.team1 }}</span>
+                <span class="match-team {{ 'team-winner' if m.winner and m.winner != 'NR' and m.winner == m.team1 else '' }}">{{ m.team1 }}</span>
                 <span class="match-vs">vs</span>
-                <span class="match-team {{ 'team-winner' if m.winner == m.team2 else '' }}">{{ m.team2 }}</span>
+                <span class="match-team {{ 'team-winner' if m.winner and m.winner != 'NR' and m.winner == m.team2 else '' }}">{{ m.team2 }}</span>
             </div>
             <div class="match-list-scores">
                 <span class="match-score-text">{{ m.team1_score }}</span>
                 <span class="score-separator">&bull;</span>
                 <span class="match-score-text">{{ m.team2_score }}</span>
+                {% if m.winner == 'NR' %}<span class="match-no-result-badge">NR</span>{% endif %}
             </div>
             <div class="match-list-meta">
                 {% if m.event_name %}<span class="meta-event">{{ m.event_name }}</span>{% endif %}

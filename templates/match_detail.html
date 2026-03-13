@@ -5,15 +5,16 @@
 <h1 class="page-title">Match Ratings</h1>
 
 <div class="match-score-summary" style="margin-bottom: 32px;">
-    <div class="team-score-card {{ 'winner' if match.winner == match.team1 else '' }}">
+    <div class="team-score-card {{ 'winner' if match.winner and match.winner != 'NR' and match.winner == match.team1 else '' }}">
         <div class="team-name">{{ match.team1 }}</div>
         <div class="team-score">{{ match.team1_score }}</div>
     </div>
     <div class="score-vs">vs</div>
-    <div class="team-score-card {{ 'winner' if match.winner == match.team2 else '' }}">
+    <div class="team-score-card {{ 'winner' if match.winner and match.winner != 'NR' and match.winner == match.team2 else '' }}">
         <div class="team-name">{{ match.team2 }}</div>
         <div class="team-score">{{ match.team2_score }}</div>
     </div>
+    {% if match.winner == 'NR' %}<div class="match-no-result">No Result</div>{% endif %}
 </div>
 
 {% if match.mvp_name %}

@@ -74,11 +74,11 @@
                 <div class="history-teams">
                     <span class="history-player-team {{ 'team-winner' if m.won else '' }}">{{ name }}</span>
                     <span class="history-vs-text">vs</span>
-                    <span class="{{ 'team-winner' if not m.won and m.opponent else '' }}">{{ m.opponent }}</span>
+                    <span class="{{ 'team-winner' if not m.won and not m.no_result and m.opponent else '' }}">{{ m.opponent }}</span>
                 </div>
                 <div class="history-scores">{{ m.team_score }} &bull; {{ m.opp_score }}</div>
                 <div class="history-meta">
-                    {% if m.won %}<span class="history-result-win">Won</span>{% else %}<span class="history-result-loss">Lost</span>{% endif %}
+                    {% if m.won %}<span class="history-result-win">Won</span>{% elif m.no_result %}<span class="history-result-nr">No Result</span>{% else %}<span class="history-result-loss">Lost</span>{% endif %}
                     {% if m.venue %}&bull; {{ m.venue }}{% endif %}
                     &bull; {{ m.date }}
                 </div>

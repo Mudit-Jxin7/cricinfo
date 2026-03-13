@@ -537,6 +537,26 @@ body {
     flex-wrap: wrap;
 }
 
+.match-no-result {
+    width: 100%;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.match-no-result-badge {
+    margin-left: 8px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border-radius: 4px;
+}
+
 .team-score-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1363,6 +1383,13 @@ body {
 
 .history-result-loss {
     color: var(--rating-poor);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.history-result-nr {
+    color: var(--text-muted);
     font-weight: 600;
     font-size: 0.75rem;
     text-transform: uppercase;

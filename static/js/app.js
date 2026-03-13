@@ -76,6 +76,7 @@ function updateTeamLabels() {
         <option value="">-- Select --</option>
         <option value="${t1}" ${currentVal === t1 ? 'selected' : ''}>${t1}</option>
         <option value="${t2}" ${currentVal === t2 ? 'selected' : ''}>${t2}</option>
+        <option value="NR" ${currentVal === 'NR' ? 'selected' : ''}>NR (No Result)</option>
     `;
 }
 
@@ -298,8 +299,9 @@ function renderResults(result, winnerName) {
     const t2 = result.team2;
     const mi = result.match_info;
 
-    const t1Winner = winnerName === t1.name;
-    const t2Winner = winnerName === t2.name;
+    const isNoResult = !winnerName || winnerName === 'NR';
+    const t1Winner = !isNoResult && winnerName === t1.name;
+    const t2Winner = !isNoResult && winnerName === t2.name;
 
     // Find MVP (highest overall rating across both teams)
     const allPlayers = [...t1.players, ...t2.players];
@@ -321,6 +323,7 @@ function renderResults(result, winnerName) {
                     <div class="team-name">${escHTML(t2.name)}</div>
                     <div class="team-score">${escHTML(mi.team2_score)}</div>
                 </div>
+                ${isNoResult ? '<div class="match-no-result">No Result</div>' : ''}
             </div>
         </div>
     `;

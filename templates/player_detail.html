@@ -209,11 +209,11 @@
                 <div class="history-teams">
                     <span class="history-player-team {{ 'team-winner' if team_won else '' }}">{{ h.team }}</span>
                     <span class="history-vs-text">vs</span>
-                    <span class="{{ 'team-winner' if not team_won and h.winner else '' }}">{{ opponent }}</span>
+                    <span class="{{ 'team-winner' if not team_won and h.winner and h.winner != 'NR' else '' }}">{{ opponent }}</span>
                 </div>
                 <div class="history-scores">{{ h.team1_score }} &bull; {{ h.team2_score }}</div>
                 <div class="history-meta">
-                    {% if team_won %}<span class="history-result-win">Won</span>{% elif h.winner %}<span class="history-result-loss">Lost</span>{% endif %}
+                    {% if team_won %}<span class="history-result-win">Won</span>{% elif h.winner == 'NR' %}<span class="history-result-nr">No Result</span>{% elif h.winner %}<span class="history-result-loss">Lost</span>{% endif %}
                     {% if h.venue %}&bull; {{ h.venue }}{% endif %}
                     &bull; {{ h.created_at[:10] }}
                 </div>
