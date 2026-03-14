@@ -24,6 +24,8 @@ app = Flask(__name__)
 
 def _rating_color(rating: float) -> str:
     """Return CSS class name for a rating value."""
+    if rating is None:
+        return "poor"
     if rating >= 8.0:
         return "exceptional"
     elif rating >= 7.0:

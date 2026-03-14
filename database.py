@@ -959,6 +959,8 @@ def get_team_matches(team_name: str):
         """, (match_id, opponent)).fetchone()
 
         no_result = (m["winner"] or "").strip().upper() == "NR"
+        def _num(v, default=0):
+            return default if v is None else v
         result.append({
             "match_id": match_id,
             "opponent": opponent,
@@ -969,14 +971,14 @@ def get_team_matches(team_name: str):
             "venue": m["venue"],
             "date": m["created_at"][:10],
             "mvp_name": m["mvp_name"],
-            "team_avg_overall": team_stats["avg_overall"] if team_stats else 0,
-            "team_avg_bat": team_stats["avg_bat"] if team_stats else 0,
-            "team_avg_bowl": team_stats["avg_bowl"] if team_stats else 0,
-            "team_avg_field": team_stats["avg_field"] if team_stats else 0,
-            "team_runs": team_stats["total_runs"] if team_stats else 0,
-            "team_wickets": team_stats["total_wickets"] if team_stats else 0,
-            "player_count": team_stats["player_count"] if team_stats else 0,
-            "opp_avg_overall": opp_stats["avg_overall"] if opp_stats else 0,
+            "team_avg_overall": _num(team_stats["avg_overall"], 0) if team_stats else 0,
+            "team_avg_bat": _num(team_stats["avg_bat"], 0) if team_stats else 0,
+            "team_avg_bowl": _num(team_stats["avg_bowl"], 0) if team_stats else 0,
+            "team_avg_field": _num(team_stats["avg_field"], 0) if team_stats else 0,
+            "team_runs": _num(team_stats["total_runs"], 0) if team_stats else 0,
+            "team_wickets": _num(team_stats["total_wickets"], 0) if team_stats else 0,
+            "player_count": _num(team_stats["player_count"], 0) if team_stats else 0,
+            "opp_avg_overall": _num(opp_stats["avg_overall"], 0) if opp_stats else 0,
         })
 
     conn.close()
