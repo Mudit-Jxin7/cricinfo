@@ -184,8 +184,15 @@ def calculate_batting_rating(
     details["chase_pressure"] = {"rrr": round(ctx.required_run_rate, 2), "score": round(chase_score, 2)}
 
     # ── 9. Cameo impact bonus (short explosive innings) ──
+    # Only for batters (not bowlers) and only for position 7 and below (lower order)
     cameo_score = 0.0
-    if entry.balls >= 2 and entry.balls <= 10 and entry.strike_rate >= 180:
+    if (
+        not is_bowler
+        and entry.batting_position >= 7
+        and entry.balls >= 2
+        and entry.balls <= 10
+        and entry.strike_rate >= 180
+    ):
         # Reward explosive cameos -- a 10(3) with boundaries is impactful
         impact = entry.runs / entry.balls  # runs per ball
         if impact >= 3.0:
