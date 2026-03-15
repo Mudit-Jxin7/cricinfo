@@ -715,7 +715,7 @@ def get_best_team_of_tournament_ipl_all():
     n_batsmen, n_bowlers = 6, 4
     result = {}
 
-    # Batsmen (role = batter, min 150 runs)
+    # Batsmen (role = batter, min 300 runs for IPL all seasons)
     rows = conn.execute(f"""
         SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
                COUNT(*) as matches, ROUND(AVG(pr.batting_rating), 2) as avg_rating,
@@ -725,13 +725,13 @@ def get_best_team_of_tournament_ipl_all():
         {join_clause}
         WHERE pr.role = 'batter' AND pr.did_bat = 1 {event_clause}
         GROUP BY LOWER(pr.player_name)
-        HAVING SUM(pr.runs) >= 150 AND COUNT(*) >= 4
+        HAVING SUM(pr.runs) >= 300 AND COUNT(*) >= 4
         ORDER BY AVG(pr.batting_rating) DESC
         LIMIT ?
     """, (n_batsmen,)).fetchall()
     result["batsmen"] = [dict(r) for r in rows]
 
-    # 1 wicket-keeper
+    # 1 wicket-keeper (min 300 runs for IPL all seasons)
     rows = conn.execute(f"""
         SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
                COUNT(*) as matches, ROUND(AVG(pr.overall_rating), 2) as avg_rating,
@@ -741,7 +741,7 @@ def get_best_team_of_tournament_ipl_all():
         {join_clause}
         WHERE pr.role = 'wicket_keeper' AND pr.did_bat = 1 {event_clause}
         GROUP BY LOWER(pr.player_name)
-        HAVING SUM(pr.runs) >= 150 AND COUNT(*) >= 4
+        HAVING SUM(pr.runs) >= 300 AND COUNT(*) >= 4
         ORDER BY AVG(pr.overall_rating) DESC
         LIMIT 1
     """).fetchall()
@@ -762,13 +762,13 @@ def get_best_team_of_tournament_ipl_all():
         {join_clause}
         WHERE pr.role IN ('batting_all_rounder', 'bowling_all_rounder') AND (pr.did_bat = 1 OR pr.did_bowl = 1) {event_clause}
         GROUP BY LOWER(pr.player_name)
-        HAVING ((SUM(pr.runs) >= 50 AND SUM(pr.wickets) >= 3) OR (SUM(pr.runs) >= 75 AND SUM(pr.wickets) >= 2)) AND COUNT(*) >= 4
+        HAVING ((SUM(pr.runs) >= 150 AND SUM(pr.wickets) >= 4) OR (SUM(pr.runs) >= 100 AND SUM(pr.wickets) >= 5)) AND COUNT(*) >= 4
         ORDER BY (COALESCE(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 0) + COALESCE(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 0)) / 2 DESC
         LIMIT 2
     """).fetchall()
     result["all_rounders"] = [dict(r) for r in rows]
 
-    # 4 bowlers
+    # 4 bowlers (min 10 wickets for IPL all seasons)
     rows = conn.execute(f"""
         SELECT pr.player_name, GROUP_CONCAT(DISTINCT pr.team) as teams,
                COUNT(*) as matches, ROUND(AVG(pr.bowling_rating), 2) as avg_rating,
@@ -779,7 +779,7 @@ def get_best_team_of_tournament_ipl_all():
         {join_clause}
         WHERE pr.role = 'bowler' AND pr.did_bowl = 1 {event_clause}
         GROUP BY LOWER(pr.player_name)
-        HAVING SUM(pr.wickets) >= 7 AND COUNT(*) >= 4
+        HAVING SUM(pr.wickets) >= 10 AND COUNT(*) >= 4
         ORDER BY AVG(pr.bowling_rating) DESC
         LIMIT ?
     """, (n_bowlers,)).fetchall()
