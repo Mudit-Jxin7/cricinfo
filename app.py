@@ -253,7 +253,22 @@ def leaderboard():
     current_event = db.get_event(event_id) if event_id else None
     return render_template("leaderboard.html",
                            batsmen=batsmen, bowlers=bowlers, all_rounders=all_rounders,
-                           events=events, current_event_id=event_id, current_event=current_event)
+                           events=events, current_event_id=event_id, current_event=current_event,
+                           ipl_all=False)
+
+
+@app.route("/leaderboard/ipl")
+def leaderboard_ipl_all():
+    """Leaderboard across all IPL events. Same criteria as IPL All Seasons team (300 runs, 10 wkts, all-rounder 150/4 or 100/5)."""
+    batsmen = db.get_top_batsmen_ipl_all(10)
+    bowlers = db.get_top_bowlers_ipl_all(10)
+    all_rounders = db.get_top_all_rounders_ipl_all(5)
+    events = db.get_all_events()
+    current_event = {"name": "IPL (All Seasons)"}
+    return render_template("leaderboard.html",
+                           batsmen=batsmen, bowlers=bowlers, all_rounders=all_rounders,
+                           events=events, current_event_id=None, current_event=current_event,
+                           ipl_all=True)
 
 
 @app.route("/best-team")

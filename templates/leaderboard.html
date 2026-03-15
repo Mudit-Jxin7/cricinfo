@@ -7,10 +7,11 @@
 
 <div class="event-filter-bar">
     <label for="event_filter">Event:</label>
-    <select id="event_filter" onchange="window.location.href=this.value ? '/leaderboard?event_id='+this.value : '/leaderboard';">
+    <select id="event_filter" onchange="var v=this.value; window.location.href=(v === 'ipl_all') ? '/leaderboard/ipl' : (v ? '/leaderboard?event_id='+v : '/leaderboard');">
         <option value="">All events</option>
+        <option value="ipl_all" {{ 'selected' if ipl_all else '' }}>IPL (All Seasons)</option>
         {% for e in events %}
-        <option value="{{ e.id }}" {{ 'selected' if current_event_id == e.id else '' }}>{{ e.name }}</option>
+        <option value="{{ e.id }}" {{ 'selected' if not ipl_all and current_event_id == e.id else '' }}>{{ e.name }}</option>
         {% endfor %}
     </select>
 </div>

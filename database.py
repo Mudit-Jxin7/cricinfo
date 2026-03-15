@@ -571,6 +571,114 @@ def get_top_all_rounders(limit=10, event_id=None):
     return result[:limit]
 
 
+def get_top_batsmen_ipl_all(limit=10):
+    """Top batsmen across all IPL events. Min 300 runs, 4 matches."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT pr.player_name,
+               COUNT(*) as matches,
+               ROUND(AVG(pr.batting_rating), 2) as avg_rating,
+               SUM(pr.runs) as total_runs,
+               SUM(pr.balls) as total_balls,
+               SUM(pr.fours) as total_fours,
+               SUM(pr.sixes) as total_sixes,
+               MAX(pr.overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT pr.team) as teams
+        FROM player_ratings pr
+        JOIN matches m ON pr.match_id = m.id
+        JOIN events e ON m.event_id = e.id
+        WHERE pr.did_bat = 1 AND LOWER(TRIM(e.name)) LIKE 'ipl%'
+        GROUP BY LOWER(pr.player_name)
+        HAVING SUM(pr.runs) >= 300 AND COUNT(*) >= 4
+        ORDER BY avg_rating DESC
+        LIMIT ?
+    """, (limit,)).fetchall()
+    conn.close()
+    result = [dict(r) for r in rows]
+    for d in result:
+        total_balls = d.get("total_balls") or 0
+        total_runs = d.get("total_runs") or 0
+        d["strike_rate"] = round((total_runs / total_balls) * 100, 1) if total_balls > 0 else 0
+    return result
+
+
+def get_top_bowlers_ipl_all(limit=10):
+    """Top bowlers across all IPL events. Min 10 wickets, 4 matches."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT pr.player_name,
+               COUNT(*) as matches,
+               ROUND(AVG(pr.bowling_rating), 2) as avg_rating,
+               SUM(pr.wickets) as total_wickets,
+               SUM(pr.overs_bowled) as total_overs,
+               SUM(pr.runs_conceded) as total_runs_conceded,
+               MAX(pr.overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT pr.team) as teams
+        FROM player_ratings pr
+        JOIN matches m ON pr.match_id = m.id
+        JOIN events e ON m.event_id = e.id
+        WHERE pr.did_bowl = 1 AND LOWER(TRIM(e.name)) LIKE 'ipl%'
+        GROUP BY LOWER(pr.player_name)
+        HAVING SUM(pr.wickets) >= 10 AND COUNT(*) >= 4
+        ORDER BY avg_rating DESC
+        LIMIT ?
+    """, (limit,)).fetchall()
+    conn.close()
+    result = [dict(r) for r in rows]
+    for d in result:
+        total_wickets = d.get("total_wickets") or 0
+        total_overs = d.get("total_overs") or 0
+        full_overs = int(total_overs)
+        part = round((total_overs - full_overs) * 10)
+        total_balls_bowled = full_overs * 6 + part
+        d["strike_rate"] = round(total_balls_bowled / total_wickets, 1) if total_wickets > 0 else 0
+        total_runs_conceded = d.get("total_runs_conceded") or 0
+        d["economy"] = round(total_runs_conceded / (total_balls_bowled / 6), 2) if total_balls_bowled > 0 else 0
+    return result
+
+
+def get_top_all_rounders_ipl_all(limit=10):
+    """Top all-rounders across all IPL events. (150 runs & 4 wkts) OR (100 runs & 5 wkts), 4+ matches."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT pr.player_name,
+               COUNT(*) as matches,
+               ROUND(AVG(CASE WHEN pr.did_bat = 1 THEN pr.batting_rating END), 2) as avg_bat,
+               ROUND(AVG(CASE WHEN pr.did_bowl = 1 THEN pr.bowling_rating END), 2) as avg_bowl,
+               SUM(CASE WHEN pr.role = 'batting_all_rounder' THEN 1 ELSE 0 END) as bat_ar_count,
+               SUM(CASE WHEN pr.role = 'bowling_all_rounder' THEN 1 ELSE 0 END) as bowl_ar_count,
+               SUM(pr.runs) as total_runs,
+               SUM(pr.wickets) as total_wickets,
+               MAX(pr.overall_rating) as best_rating,
+               GROUP_CONCAT(DISTINCT pr.team) as teams
+        FROM player_ratings pr
+        JOIN matches m ON pr.match_id = m.id
+        JOIN events e ON m.event_id = e.id
+        WHERE (pr.did_bat = 1 OR pr.did_bowl = 1)
+          AND pr.role IN ('batting_all_rounder', 'bowling_all_rounder')
+          AND LOWER(TRIM(e.name)) LIKE 'ipl%'
+        GROUP BY LOWER(pr.player_name)
+        HAVING ((SUM(pr.runs) >= 150 AND SUM(pr.wickets) >= 4) OR (SUM(pr.runs) >= 100 AND SUM(pr.wickets) >= 5)) AND COUNT(*) >= 4
+    """).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        d = dict(r)
+        avg_bat = d.get("avg_bat") or 0
+        avg_bowl = d.get("avg_bowl") or 0
+        bat_ar_count = d.get("bat_ar_count") or 0
+        bowl_ar_count = d.get("bowl_ar_count") or 0
+        is_bat_ar = bat_ar_count >= bowl_ar_count
+        if is_bat_ar:
+            combined = round(0.6 * avg_bat + 0.4 * avg_bowl, 2)
+        else:
+            combined = round(0.6 * avg_bowl + 0.4 * avg_bat, 2)
+        d["avg_combined"] = combined
+        result.append(d)
+    result.sort(key=lambda x: x["avg_combined"], reverse=True)
+    return result[:limit]
+
+
 def get_best_team_of_tournament(event_id=None):
     """Best team of tournament. Default: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers.
     For event named 'IPL 2024' or 'IPL 2025': 6 batsmen, 1 wk, 2 best all-rounders (any role), 4 bowlers."""
