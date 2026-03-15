@@ -4,15 +4,8 @@
 
 // ===== Constants =====
 const DISMISSAL_OPTIONS = [
-    { value: 'not_out', label: 'Not Out' },
-    { value: 'bowled', label: 'Bowled' },
-    { value: 'caught', label: 'Caught' },
-    { value: 'lbw', label: 'LBW' },
-    { value: 'run_out', label: 'Run Out' },
-    { value: 'stumped', label: 'Stumped' },
-    { value: 'hit_wicket', label: 'Hit Wicket' },
-    { value: 'retired_hurt', label: 'Retired Hurt' },
-    { value: 'did_not_bat', label: 'Did Not Bat' },
+    { value: 'out', label: 'OUT' },
+    { value: 'not_out', label: 'NOT OUT' },
 ];
 
 const ROLE_OPTIONS = [
@@ -105,7 +98,7 @@ function addBattingRow(tableId) {
         <td><input type="number" min="0" value="0"></td>
         <td><input type="number" min="0" value="0"></td>
         <td><input type="number" min="0" value="0"></td>
-        <td>${createSelectHTML(DISMISSAL_OPTIONS, 'dismissal', 'caught')}</td>
+        <td>${createSelectHTML(DISMISSAL_OPTIONS, 'dismissal', 'out')}</td>
         <td><button type="button" class="btn btn-remove" onclick="removeRow(this)" title="Remove">&times;</button></td>
     `;
     tbody.appendChild(tr);

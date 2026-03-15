@@ -358,7 +358,7 @@ def _parse_match_data(data: dict) -> Match:
                 balls=int(e.get("balls", 0)),
                 fours=int(e.get("fours", 0)),
                 sixes=int(e.get("sixes", 0)),
-                dismissal=DismissalType(e.get("dismissal", "caught")),
+                dismissal=DismissalType.NOT_OUT if (e.get("dismissal") or "").strip().lower() == "not_out" else DismissalType.CAUGHT,
                 batting_position=i + 1,
                 role=PlayerRole(e.get("role", "batter")),
             ))
