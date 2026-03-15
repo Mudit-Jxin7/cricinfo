@@ -1,6 +1,6 @@
 """Bowling rating calculator with context-aware adjustments.
 
-Base rating = 5.0 (average T20 performance).
+Base rating = 5.4 (average T20 performance).
 Economy is judged relative to the match, not absolute.
 Wicket quality (dismissing set batsmen) matters.
 """
@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from .context import MatchContext, get_economy_context_adjustment
 from .models import BowlingEntry
+
+BOWLING_BASE_RATING = 5.4
 
 
 def calculate_bowling_rating(
@@ -22,9 +24,9 @@ def calculate_bowling_rating(
         (rating, details_dict) with a breakdown.
     """
     if not entry.did_bowl:
-        return 5.0, {"note": "Did not bowl"}
+        return BOWLING_BASE_RATING, {"note": "Did not bowl"}
 
-    base = 5.0
+    base = BOWLING_BASE_RATING
     details: dict = {}
 
     # ── 1. Wickets component (0 to +3.0) ──
