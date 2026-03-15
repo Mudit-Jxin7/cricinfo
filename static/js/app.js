@@ -93,12 +93,14 @@ function createSelectHTML(options, name, defaultVal) {
 function addBattingRow(tableId) {
     const tbody = document.querySelector(`#${tableId} tbody`);
     const rowNum = tbody.rows.length + 1;
+    // Position 7 and below = lower order, default to bowler
+    const defaultRole = rowNum >= 8 ? 'bowler' : 'batter';
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${rowNum}</td>
         <td><input type="text" class="name-input" placeholder="Player name"></td>
-        <td>${createSelectHTML(ROLE_OPTIONS, 'role', 'batter')}</td>
+        <td>${createSelectHTML(ROLE_OPTIONS, 'role', defaultRole)}</td>
         <td><input type="number" min="0" value="0"></td>
         <td><input type="number" min="0" value="0"></td>
         <td><input type="number" min="0" value="0"></td>
