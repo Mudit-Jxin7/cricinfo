@@ -264,7 +264,19 @@ def best_team():
     events = db.get_all_events()
     current_event = db.get_event(event_id) if event_id else None
     return render_template("best_team.html", team=team,
-                           events=events, current_event_id=event_id, current_event=current_event)
+                           events=events, current_event_id=event_id, current_event=current_event,
+                           ipl_all=False)
+
+
+@app.route("/best-team/ipl")
+def best_team_ipl_all():
+    """Best team of tournament across all IPL events (name starting with IPL)."""
+    team = db.get_best_team_of_tournament_ipl_all()
+    events = db.get_all_events()
+    current_event = {"name": "IPL (All Seasons)"}
+    return render_template("best_team.html", team=team,
+                           events=events, current_event_id=None, current_event=current_event,
+                           ipl_all=True)
 
 
 # ───── Teams ─────
