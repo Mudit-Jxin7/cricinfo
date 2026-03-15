@@ -17,7 +17,7 @@
                     <label for="event_id">Event</label>
                     <select id="event_id" name="event_id">
                         {% for e in events %}
-                        <option value="{{ e.id }}" {{ 'selected' if loop.first else '' }}>{{ e.name }}</option>
+                        <option value="{{ e.id }}" {{ 'selected' if e.id == default_event_id else '' }}>{{ e.name }}</option>
                         {% endfor %}
                         {% if not events %}
                         <option value="1">World Cup 2026</option>

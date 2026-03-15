@@ -47,9 +47,11 @@ app.jinja_env.globals["_rating_color"] = _rating_color
 
 @app.route("/")
 def index():
-    """Render the match input form."""
+    """Render the match input form. Default event is IPL 2024."""
     events = db.get_all_events()
-    return render_template("index.html", events=events)
+    ipl_2024 = db.get_event_by_name("IPL 2024")
+    default_event_id = ipl_2024["id"] if ipl_2024 else (events[0]["id"] if events else 1)
+    return render_template("index.html", events=events, default_event_id=default_event_id)
 
 
 @app.route("/events", methods=["GET", "POST"])
