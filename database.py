@@ -573,13 +573,14 @@ def get_top_all_rounders(limit=10, event_id=None):
 
 def get_best_team_of_tournament(event_id=None):
     """Best team of tournament. Default: 5 batsmen, 1 wk, 2 bat AR, 1 bowl AR, 3 bowlers.
-    For event named 'IPL 2025': 6 batsmen, 1 wk, 2 best all-rounders (any role), 4 bowlers."""
+    For event named 'IPL 2024' or 'IPL 2025': 6 batsmen, 1 wk, 2 best all-rounders (any role), 4 bowlers."""
     conn = get_db()
     event = get_event(event_id) if event_id else None
-    is_ipl_2025 = event and (event.get("name") or "").strip().lower() == "ipl 2025"
-    n_batsmen = 6 if is_ipl_2025 else 5
-    n_bat_ar = 1 if is_ipl_2025 else 2
-    n_bowlers = 4 if is_ipl_2025 else 3
+    event_name = (event.get("name") or "").strip().lower() if event else ""
+    is_ipl_style = event_name in ("ipl 2024", "ipl 2025")
+    n_batsmen = 6 if is_ipl_style else 5
+    n_bat_ar = 1 if is_ipl_style else 2
+    n_bowlers = 4 if is_ipl_style else 3
 
     event_clause = "AND m.event_id = ?" if event_id else ""
     join_clause = "JOIN matches m ON pr.match_id = m.id"
@@ -623,8 +624,8 @@ def get_best_team_of_tournament(event_id=None):
     """, params_wk).fetchall()
     result["wicket_keeper"] = [dict(r) for r in rows]
 
-    if is_ipl_2025:
-        # IPL 2025: 2 best all-rounders irrespective of batting/bowling role
+    if is_ipl_style:
+        # IPL 2024/2025: 2 best all-rounders irrespective of batting/bowling role
         result["bat_all_rounders"] = []
         result["bowl_all_rounder"] = []
         rows = conn.execute(f"""
