@@ -36,10 +36,10 @@ const ROLE_LABELS = {
 // ===== Initialize =====
 document.addEventListener('DOMContentLoaded', () => {
     // Add initial rows
-    for (let i = 0; i < 6; i++) addBattingRow('fi_batting_table');
-    for (let i = 0; i < 6; i++) addBattingRow('si_batting_table');
-    for (let i = 0; i < 4; i++) addBowlingRow('fi_bowling_table');
-    for (let i = 0; i < 4; i++) addBowlingRow('si_bowling_table');
+    for (let i = 0; i < 7; i++) addBattingRow('fi_batting_table');
+    for (let i = 0; i < 7; i++) addBattingRow('si_batting_table');
+    for (let i = 0; i < 5; i++) addBowlingRow('fi_bowling_table');
+    for (let i = 0; i < 5; i++) addBowlingRow('si_bowling_table');
 
     // Team name listeners
     const team1Input = document.getElementById('team1_name');
